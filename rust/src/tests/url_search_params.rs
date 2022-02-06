@@ -1,4 +1,4 @@
-use crate::url_search_params::URLSearchParams;
+use crate::url_search_params::{URLSearchParams};
 
 #[test]
 fn has_returns_correct() {

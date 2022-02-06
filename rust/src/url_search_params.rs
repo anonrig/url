@@ -70,7 +70,7 @@ impl URLSearchParams {
 
   /// Returns a query string suitable for use in a URL.
   #[wasm_bindgen(js_name = toString)]
-  pub fn to_string(&self) -> String {
+  pub fn to_js_string(&self) -> String {
     self.params
       .iter()
       .map(|p| {
