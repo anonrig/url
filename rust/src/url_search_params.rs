@@ -16,6 +16,14 @@ pub struct URLSearchParams {
 #[allow(clippy::unused_unit)]
 #[wasm_bindgen]
 impl URLSearchParams {
+  /// Create a new URLSearchParams instance
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// assert_eq!(search_params.to_js_string(), "".to_string());
+  /// ```
   #[wasm_bindgen(constructor)]
   pub fn new(_params: Option<String>) -> URLSearchParams {
     URLSearchParams {
@@ -24,6 +32,15 @@ impl URLSearchParams {
   }
 
   /// Appends a specified key-value pair as a new search parameter.
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// search_params.append("name".to_string(), "value1".to_string());
+  /// search_params.append("name".to_string(), "value2".to_string());
+  /// assert_eq!(search_params.to_js_string(), "name=value1&name=value2".to_string());
+  /// ```
   #[wasm_bindgen]
   pub fn append(&mut self, name: String, value: String) {
     self.params.push(Parameter { name, value })
@@ -31,6 +48,16 @@ impl URLSearchParams {
 
   /// Deletes the given search parameter and all its associated values from the list
   /// of all search parameters.
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// search_params.set("name".to_string(), "value".to_string());
+  /// assert_eq!(search_params.has("name".to_string()), true);
+  /// search_params.delete("name".to_string());
+  /// assert_eq!(search_params.has("name".to_string()), false);
+  /// ```
   #[wasm_bindgen]
   pub fn delete(&mut self, name: String) {
     self.params.retain(|pair| pair.name != name);
