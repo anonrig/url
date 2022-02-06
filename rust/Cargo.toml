@@ -5,11 +5,11 @@ authors = ["Yagiz Nizipli <yagiz@nizipli.com"]
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 js-sys = "0.3.56"
 wasm-bindgen = "0.2.79"
 
 [dev-dependencies]
-criterion = "0.3.5"
+wasm-bindgen-test = "0.3.29"

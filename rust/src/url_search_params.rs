@@ -37,6 +37,14 @@ impl URLSearchParams {
   }
 
   /// Returns a string if the given search parameter is found; otherwise `null`.
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// search_params.set("name".to_string(), "value".to_string());
+  /// assert_eq!(search_params.get("name".to_string()).unwrap(), "value".to_string());
+  /// ```
   #[wasm_bindgen]
   pub fn get(&self, name: String) -> Option<String> {
     self.params.iter().find(|p| p.name == name).map(|p| p.value.clone())
@@ -54,6 +62,14 @@ impl URLSearchParams {
   }
 
   /// Returns a boolean value that indicates whether a parameter with the specified name exists.
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// search_params.set("name".to_string(), "value".to_string());
+  /// assert_eq!(search_params.has("name".to_string()), true);
+  /// ```
   #[wasm_bindgen]
   pub fn has(&self, name: String) -> bool {
     self.params.iter().any(|p| p.name == name)
@@ -62,6 +78,14 @@ impl URLSearchParams {
   /// Sets the value associated with a given search parameter to the given value.
   /// If there were several matching values, this method deletes the others.
   /// If the search parameter doesn't exist, this method creates it.
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// search_params.set("name".to_string(), "value".to_string());
+  /// assert_eq!(search_params.get("name".to_string()).unwrap(), "value".to_string())
+  /// ```
   #[wasm_bindgen]
   pub fn set(&mut self, name: String, value: String) {
     self.params.retain(|p| p.name != name);
@@ -69,6 +93,14 @@ impl URLSearchParams {
   }
 
   /// Returns a query string suitable for use in a URL.
+  ///
+  /// ```
+  /// use url::url_search_params::URLSearchParams;
+  ///
+  /// let mut search_params = URLSearchParams::new(None);
+  /// search_params.set("name".to_string(), "value".to_string());
+  /// assert_eq!(search_params.to_js_string(), "name=value");
+  /// ```
   #[wasm_bindgen(js_name = toString)]
   pub fn to_js_string(&self) -> String {
     self.params
