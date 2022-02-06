@@ -18,3 +18,14 @@ fn append_should_care_about_order() {
         "value1".to_string()
     );
 }
+
+#[test]
+fn sort_should_update() {
+    let mut params = URLSearchParams::new(None);
+    params.set("a".to_string(), "a_value".to_string());
+    params.set("c".to_string(), "c_value".to_string());
+    params.set("b".to_string(), "b_value".to_string());
+    assert_eq!(params.to_js_string(), "a=a_value&c=c_value&b=b_value");
+    params.sort();
+    assert_eq!(params.to_js_string(), "a=a_value&b=b_value&c=c_value");
+}

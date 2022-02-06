@@ -122,6 +122,24 @@ impl URLSearchParams {
         self.append(name, value);
     }
 
+    /// Sorts all key/value pairs contained in this object in place and returns undefined.
+    /// The sort order is according to unicode code points of the keys.
+    ///
+    /// ```
+    /// use url::url_search_params::URLSearchParams;
+    ///
+    /// let mut search_params = URLSearchParams::new(None);
+    /// search_params.set("a".to_string(), "a_value".to_string());
+    /// search_params.set("c".to_string(), "c_value".to_string());
+    /// search_params.set("b".to_string(), "b_value".to_string());
+    /// search_params.sort();
+    /// assert_eq!(search_params.to_js_string(), "a=a_value&b=b_value&c=c_value");
+    /// ```
+    #[wasm_bindgen]
+    pub fn sort(&mut self) {
+        self.params.sort_by(|lhs, rhs| lhs.name.cmp(&rhs.name))
+    }
+
     /// Returns a query string suitable for use in a URL.
     ///
     /// ```
