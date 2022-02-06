@@ -1,3 +1,4 @@
+extern crate wasm_bindgen;
 extern crate wee_alloc;
 
 // Use `wee_alloc` as the global allocator.
