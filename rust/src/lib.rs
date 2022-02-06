@@ -5,7 +5,7 @@ extern crate wee_alloc;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-pub mod url_search_params;
 pub mod url;
+pub mod url_search_params;
 
 mod tests;

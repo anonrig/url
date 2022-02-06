@@ -18,6 +18,9 @@ jobs:
       - name: Lint
         run: cargo clippy
         working-directory: rust
+      - name: Format
+        run: cargo fmt --check
+        working-directory: rust
       - name: Build
         run: cargo build --verbose
         working-directory: rust
