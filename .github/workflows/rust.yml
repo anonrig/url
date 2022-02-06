@@ -24,3 +24,9 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
         working-directory: rust
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+        working-directory: rust
+      - name: Build wasm
+        run: wasm-pack build --out-dir out
+        working-directory: rust

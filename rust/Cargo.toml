@@ -1,5 +1,8 @@
 [package]
 name = "url"
+description = "WHATWG URL Parser written in Rust compiled to WebAssembly"
+repository = "https://github.com/anonrig/url"
+license = "MIT"
 version = "0.1.0"
 authors = ["Yagiz Nizipli <yagiz@nizipli.com"]
 edition = "2021"
@@ -10,6 +13,4 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 js-sys = "0.3.56"
 wasm-bindgen = "0.2.79"
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3.29"
+wee_alloc = "0.4.5"

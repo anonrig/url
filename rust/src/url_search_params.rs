@@ -69,6 +69,7 @@ impl URLSearchParams {
   /// let mut search_params = URLSearchParams::new(None);
   /// search_params.set("name".to_string(), "value".to_string());
   /// assert_eq!(search_params.has("name".to_string()), true);
+  /// assert_eq!(search_params.has("unknown".to_string()), false);
   /// ```
   #[wasm_bindgen]
   pub fn has(&self, name: String) -> bool {
