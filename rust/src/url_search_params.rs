@@ -2,15 +2,10 @@ use js_sys::Array;
 use std::vec::Vec;
 use wasm_bindgen::prelude::*;
 
-struct Parameter {
-    name: String,
-    value: String,
-}
-
 #[allow(clippy::unused_unit)]
 #[wasm_bindgen]
 pub struct URLSearchParams {
-    params: Vec<Parameter>,
+    params: Vec<(String, String)>,
 }
 
 #[allow(clippy::unused_unit)]
@@ -41,7 +36,7 @@ impl URLSearchParams {
     /// ```
     #[wasm_bindgen]
     pub fn append(&mut self, name: String, value: String) {
-        self.params.push(Parameter { name, value })
+        self.params.push((name, value))
     }
 
     /// Deletes the given search parameter and all its associated values from the list
@@ -58,7 +53,18 @@ impl URLSearchParams {
     /// ```
     #[wasm_bindgen]
     pub fn delete(&mut self, name: String) {
-        self.params.retain(|pair| pair.name != name);
+        self.params.retain(|p| p.0 != name);
+    }
+
+    /// Allows iteration through all values contained in this object via a callback function.
+    #[wasm_bindgen(js_name = forEach)]
+    pub fn for_each(&self, callback: &js_sys::Function) {
+        for parameter in &self.params {
+            callback.call1(
+                &JsValue::from_str(&parameter.0),
+                &JsValue::from_str(&parameter.1),
+            );
+        }
     }
 
     /// Returns a string if the given search parameter is found; otherwise `null`.
@@ -74,20 +80,18 @@ impl URLSearchParams {
     pub fn get(&self, name: String) -> Option<String> {
         self.params
             .iter()
-            .find(|p| p.name == name)
-            .map(|p| p.value.clone())
+            .find(|p| p.0 == name)
+            .map(|p| p.1.clone())
     }
 
     /// Returns all the values associated with a given search parameter as an array.
     #[wasm_bindgen(js_name = getAll)]
-    pub fn get_all(&self, name: String) -> JsValue {
-        return JsValue::from(
-            self.params
-                .iter()
-                .filter(|p| p.name == name)
-                .map(|p| JsValue::from_str(&p.value))
-                .collect::<Array>(),
-        );
+    pub fn get_all(&self, name: String) -> Array {
+        self.params
+            .iter()
+            .filter(|p| p.0 == name)
+            .map(|p| JsValue::from(&p.1))
+            .collect()
     }
 
     /// Returns a boolean value that indicates whether a parameter with the specified name exists.
@@ -102,7 +106,7 @@ impl URLSearchParams {
     /// ```
     #[wasm_bindgen]
     pub fn has(&self, name: String) -> bool {
-        self.params.iter().any(|p| p.name == name)
+        self.params.iter().any(|p| p.0 == name)
     }
 
     /// Sets the value associated with a given search parameter to the given value.
@@ -118,7 +122,7 @@ impl URLSearchParams {
     /// ```
     #[wasm_bindgen]
     pub fn set(&mut self, name: String, value: String) {
-        self.params.retain(|p| p.name != name);
+        self.params.retain(|p| p.0 != name);
         self.append(name, value);
     }
 
@@ -137,7 +141,7 @@ impl URLSearchParams {
     /// ```
     #[wasm_bindgen]
     pub fn sort(&mut self) {
-        self.params.sort_by(|lhs, rhs| lhs.name.cmp(&rhs.name))
+        self.params.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0))
     }
 
     /// Returns a query string suitable for use in a URL.
@@ -153,7 +157,7 @@ impl URLSearchParams {
     pub fn to_js_string(&self) -> String {
         self.params
             .iter()
-            .map(|p| format!("{}={}", p.name, p.value))
+            .map(|p| format!("{}={}", p.0, p.1))
             .collect::<Vec<_>>()
             .join("&")
     }

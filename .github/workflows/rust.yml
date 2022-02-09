@@ -15,20 +15,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Lint
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+        working-directory: rust
+      - name: Cargo Clippy
         run: cargo clippy
         working-directory: rust
-      - name: Format
+      - name: Cargo Format
         run: cargo fmt --check
         working-directory: rust
       - name: Build
-        run: cargo build --verbose
+        run: cargo build
         working-directory: rust
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test
         working-directory: rust
-      - name: Install wasm-pack
-        run: cargo install wasm-pack
+      - name: Run wasm tests
+        run: wasm-pack test --node
         working-directory: rust
       - name: Build wasm
         run: wasm-pack build --out-dir out
