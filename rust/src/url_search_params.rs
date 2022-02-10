@@ -91,7 +91,7 @@ impl URLSearchParams {
             .iter()
             .filter(|p| p.0 == name)
             .map(|p| JsValue::from(&p.1))
-            .collect()
+            .collect::<js_sys::Array>()
     }
 
     /// Returns a boolean value that indicates whether a parameter with the specified name exists.
@@ -107,6 +107,15 @@ impl URLSearchParams {
     #[wasm_bindgen]
     pub fn has(&self, name: String) -> bool {
         self.params.iter().any(|p| p.0 == name)
+    }
+
+    /// Returns an iterator allowing iteration through all keys contained in this object. The keys are USVString objects.
+    #[wasm_bindgen]
+    pub fn keys(&self) -> Array {
+        self.params
+            .iter()
+            .map(|p| JsValue::from(&p.0))
+            .collect::<js_sys::Array>()
     }
 
     /// Sets the value associated with a given search parameter to the given value.

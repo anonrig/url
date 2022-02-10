@@ -1,5 +1,4 @@
 use url::url_search_params::URLSearchParams;
-use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
@@ -30,6 +29,17 @@ fn sort_should_update() {
     assert_eq!(params.to_js_string(), "a=a_value&c=c_value&b=b_value");
     params.sort();
     assert_eq!(params.to_js_string(), "a=a_value&b=b_value&c=c_value");
+}
+
+#[wasm_bindgen_test]
+fn keys_should_return_an_iterator() {
+    let mut params = URLSearchParams::new(None);
+    params.set("name".to_string(), "value".to_string());
+    params.set("version".to_string(), "1.0.0".to_string());
+    assert_eq!(
+        params.keys().to_vec(),
+        ["name".to_string(), "version".to_string()]
+    )
 }
 
 #[wasm_bindgen_test]
