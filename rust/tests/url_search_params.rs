@@ -32,9 +32,10 @@ fn sort_should_update() {
 }
 
 #[wasm_bindgen_test]
-fn keys_should_return_an_iterator() {
+fn keys_should_return_unique_elements() {
     let mut params = URLSearchParams::new(None);
     params.set("name".to_string(), "value".to_string());
+    params.append("name".to_string(), "value2".to_string());
     params.set("version".to_string(), "1.0.0".to_string());
     assert_eq!(
         params.keys().to_vec(),

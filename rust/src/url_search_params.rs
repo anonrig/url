@@ -1,4 +1,5 @@
 use js_sys::Array;
+use std::collections::HashSet;
 use std::vec::Vec;
 use wasm_bindgen::prelude::*;
 
@@ -114,7 +115,10 @@ impl URLSearchParams {
     pub fn keys(&self) -> Array {
         self.params
             .iter()
-            .map(|p| JsValue::from(&p.0))
+            .map(|p| &p.0)
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .map(JsValue::from)
             .collect::<js_sys::Array>()
     }
 
