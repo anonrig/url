@@ -61,8 +61,11 @@ impl URLSearchParams {
     /// Allows iteration through all values contained in this object via a callback function.
     #[wasm_bindgen(js_name = forEach)]
     pub fn for_each(&self, callback: &js_sys::Function) {
+        let null = JsValue::null();
+
         for parameter in &self.params {
-            let _ = callback.call1(
+            let _ = callback.call2(
+                &null,
                 &JsValue::from_str(&parameter.0),
                 &JsValue::from_str(&parameter.1),
             );
