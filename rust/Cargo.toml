@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 js-sys = "0.3.56"
 serde-wasm-bindgen = "0.4.2"
-wasm-bindgen = { version = "0.2.79", features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2.79" }
 wee_alloc = "0.4.5"
 
 [dev-dependencies]
