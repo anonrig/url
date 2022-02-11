@@ -1,11 +1,24 @@
-use js_sys::{Object, Reflect};
+use js_sys::{Array, Object, Reflect};
 use url::url_search_params::URLSearchParams;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
+fn create_array_from_tuples(input: Vec<(String, String)>) -> Array {
+    let array = Array::new();
+
+    for (key, value) in input {
+        let inner_array = Array::new();
+        inner_array.push(&key.into());
+        inner_array.push(&value.into());
+        array.push(&inner_array);
+    }
+
+    array
+}
+
 #[wasm_bindgen_test]
-fn new_should_accept_none() {
-    let empty_params = URLSearchParams::new(None);
+fn new_should_accept_undefined() {
+    let empty_params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     assert_eq!(empty_params.to_js_string(), "".to_string());
 }
 
@@ -13,14 +26,29 @@ fn new_should_accept_none() {
 fn new_should_accept_object() {
     let props = Object::new();
     let _ = Reflect::set(&props, &"name".into(), &"value".into());
-    let mut params = URLSearchParams::new(Some(props));
+    let mut params = URLSearchParams::new(&JsValue::from(props)).unwrap();
     params.set("hello".to_string(), "world".to_string());
     assert_eq!(params.to_js_string(), "name=value&hello=world".to_string());
 }
 
 #[wasm_bindgen_test]
+fn new_should_accept_array() {
+    let tuples = vec![
+        ("name".to_string(), "value".to_string()),
+        ("name".to_string(), "second-value".to_string()),
+    ];
+    let props = create_array_from_tuples(tuples);
+    println!("props {:?}", props);
+    let params = URLSearchParams::new(&JsValue::from(props)).unwrap();
+    assert_eq!(
+        params.to_js_string(),
+        "name=value&name=second-value".to_string()
+    );
+}
+
+#[wasm_bindgen_test]
 fn has_returns_correct() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("name".to_string(), "value".to_string());
     assert_eq!(params.has("name".to_string()), true);
     assert_eq!(params.has("unknown".to_string()), false);
@@ -28,7 +56,7 @@ fn has_returns_correct() {
 
 #[wasm_bindgen_test]
 fn append_should_care_about_order() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.append("name".to_string(), "value1".to_string());
     params.append("name".to_string(), "value2".to_string());
     assert_eq!(
@@ -40,7 +68,7 @@ fn append_should_care_about_order() {
 
 #[wasm_bindgen_test]
 fn delete_should_literally_delete() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("hello".to_string(), "world".to_string());
     assert_eq!(params.to_js_string(), "hello=world".to_string());
     params.delete("hello".to_string());
@@ -49,7 +77,7 @@ fn delete_should_literally_delete() {
 
 #[wasm_bindgen_test]
 fn get_should_return_value() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("hello".to_string(), "world".to_string());
     assert_eq!(
         params.get("hello".to_string()).unwrap(),
@@ -60,7 +88,7 @@ fn get_should_return_value() {
 
 #[wasm_bindgen_test]
 fn get_all_should_filter_by_name() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("name".to_string(), "first-value".to_string());
     params.append("name".to_string(), "second-value".to_string());
 
@@ -72,14 +100,14 @@ fn get_all_should_filter_by_name() {
 
 #[wasm_bindgen_test]
 fn get_all_returns_empty_array() {
-    let params = URLSearchParams::new(None);
+    let params = URLSearchParams::new(&JsValue::undefined()).unwrap();
 
     assert_eq!(params.get_all("unknown".to_string()).to_vec().len(), 0)
 }
 
 #[wasm_bindgen_test]
 fn has_should_return_boolean() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("name".to_string(), "value".to_string());
     assert_eq!(params.has("name".to_string()), true);
     assert_eq!(params.has("unknown".to_string()), false);
@@ -87,7 +115,7 @@ fn has_should_return_boolean() {
 
 #[wasm_bindgen_test]
 fn keys_should_return_all_unique_keys() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.append("common".to_string(), "value1".to_string());
     params.append("common".to_string(), "value2".to_string());
     params.append("common".to_string(), "value3".to_string());
@@ -101,7 +129,7 @@ fn keys_should_return_all_unique_keys() {
 
 #[wasm_bindgen_test]
 fn set_should_update_and_override() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("name".to_string(), "value".to_string());
     assert_eq!(params.has("name".to_string()), true);
     params.append("mutate".to_string(), "value".to_string());
@@ -119,7 +147,7 @@ fn set_should_update_and_override() {
 
 #[wasm_bindgen_test]
 fn sort_should_update_internal_vector() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.set("a".to_string(), "a_value".to_string());
     params.set("c".to_string(), "c_value".to_string());
     params.set("b".to_string(), "b_value".to_string());
@@ -130,7 +158,7 @@ fn sort_should_update_internal_vector() {
 
 #[wasm_bindgen_test]
 fn to_js_string_should_return_string() {
-    let mut params = URLSearchParams::new(None);
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     assert_eq!(params.to_js_string(), "".to_string());
     params.set("hello".to_string(), "world".to_string());
     assert_eq!(params.to_js_string(), "hello=world".to_string());

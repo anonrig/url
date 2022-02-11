@@ -1,4 +1,4 @@
-use js_sys::{Array, Object};
+use js_sys::Array;
 use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
 use wasm_bindgen::prelude::*;
@@ -14,19 +14,35 @@ pub struct URLSearchParams {
 impl URLSearchParams {
     /// Create a new URLSearchParams instance
     #[wasm_bindgen(constructor)]
-    pub fn new(props: Option<Object>) -> URLSearchParams {
-        let props = JsValue::from(props);
+    pub fn new(props: &JsValue) -> Result<URLSearchParams, JsValue> {
         let mut internal_params: Vec<(String, String)> = Vec::new();
 
-        if props.is_object() {
-            let hash: HashMap<String, String> = serde_wasm_bindgen::from_value(props).unwrap();
+        if props.is_null() || props.is_undefined() {
+            // do nothing
+        } else if Array::is_array(props) {
+            let iterator = js_sys::try_iter(props)?.unwrap();
+
+            for i in iterator {
+                let key_value_array: Vec<String> = serde_wasm_bindgen::from_value(i.unwrap())?;
+
+                if key_value_array.len() >= 2 {
+                    let mut e = key_value_array.iter();
+
+                    if let (Some(key), Some(value)) = (e.next(), e.next()) {
+                        internal_params.push((key.clone(), value.clone()));
+                    }
+                }
+            }
+        } else if props.is_object() {
+            let hash: HashMap<String, String> =
+                serde_wasm_bindgen::from_value(JsValue::from(props))?;
 
             internal_params = hash.into_iter().map(|(k, v)| (k, v)).collect::<Vec<_>>()
         }
 
-        URLSearchParams {
+        Ok(URLSearchParams {
             params: internal_params,
-        }
+        })
     }
 
     /// Appends a specified key-value pair as a new search parameter.
