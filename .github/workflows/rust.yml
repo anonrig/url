@@ -34,5 +34,5 @@ jobs:
         run: wasm-pack test --node
         working-directory: rust
       - name: Build wasm
-        run: wasm-pack build --out-dir out
+        run: wasm-pack build --target nodejs --scope anonrig --out-dir out
         working-directory: rust
