@@ -18,3 +18,8 @@ wee_alloc = "0.4.5"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.29"
+
+[profile.release]
+# Enable link-time optimization.
+# This makes the compiled code faster and smaller, but it makes compiling slower.
+lto = true
