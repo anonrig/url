@@ -40,5 +40,7 @@ jobs:
         run: |
           npm version prerelease --preid=ci-$GITHUB_RUN_ID --no-git-tag-version
           npm publish --access=public --tag=alpha
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: rust/out
         if: ${{ github.ref == 'refs/heads/main' }}
