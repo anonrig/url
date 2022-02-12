@@ -51,6 +51,21 @@ impl URLSearchParams {
         self.params.push((name, value))
     }
 
+    /// Returns an iterator allowing iteration through all key/value pairs contained in this object.
+    /// The iterator returns key/value pairs in the same order as they appear in the query string.
+    #[wasm_bindgen]
+    pub fn entries(&self) -> Array {
+        self.params
+            .iter()
+            .map(|p| {
+                let as_array = Array::new();
+                as_array.push(&JsValue::from_str(p.0.as_str()));
+                as_array.push(&JsValue::from_str(p.1.as_str()));
+                as_array
+            })
+            .collect::<js_sys::Array>()
+    }
+
     /// Deletes the given search parameter and all its associated values from the list
     /// of all search parameters.
     #[wasm_bindgen]
