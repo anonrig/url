@@ -163,3 +163,15 @@ fn to_js_string_should_return_string() {
     params.set("hello".to_string(), "world".to_string());
     assert_eq!(params.to_js_string(), "hello=world".to_string());
 }
+
+#[wasm_bindgen_test]
+fn values_should_return_only_values() {
+    let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
+    assert_eq!(params.values().to_vec().len(), 0);
+    params.set("name".to_string(), "value".to_string());
+    params.set("second".to_string(), "second-value".to_string());
+    assert_eq!(
+        params.values().to_vec(),
+        ["value", "second-value"].map(JsValue::from)
+    );
+}

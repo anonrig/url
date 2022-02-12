@@ -149,4 +149,13 @@ impl URLSearchParams {
             .collect::<Vec<_>>()
             .join("&")
     }
+
+    /// Returns an iterator allowing iteration through all values contained in this object.
+    #[wasm_bindgen]
+    pub fn values(&self) -> Array {
+        self.params
+            .iter()
+            .map(|p| JsValue::from_str(p.1.as_str()))
+            .collect::<js_sys::Array>()
+    }
 }
