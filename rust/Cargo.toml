@@ -1,5 +1,5 @@
 [package]
-name = "url"
+name = "url-wasm"
 description = "WHATWG URL Parser written in Rust compiled to WebAssembly"
 repository = "https://github.com/anonrig/url"
 license = "MIT"
