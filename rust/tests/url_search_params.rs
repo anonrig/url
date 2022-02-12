@@ -1,5 +1,5 @@
 use js_sys::{Array, Object, Reflect};
-use url::url_search_params::URLSearchParams;
+use url_wasm::url_search_params::URLSearchParams;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
