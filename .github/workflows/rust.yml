@@ -15,6 +15,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
       - name: Install wasm-pack
         run: cargo install wasm-pack
         working-directory: rust
@@ -41,6 +45,6 @@ jobs:
           npm version prerelease --preid=ci-$GITHUB_RUN_ID --no-git-tag-version
           npm publish --access=public --tag=alpha
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: rust/out
         if: ${{ github.ref == 'refs/heads/main' }}
