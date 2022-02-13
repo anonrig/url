@@ -90,6 +90,13 @@ impl URL {
         self.protocol.clone()
     }
 
+    #[wasm_bindgen(setter = protocol)]
+    pub fn set_protocol(&mut self, protocol: String) {
+        if let Ok(protocol) = URL::parse_protocol(protocol.chars()) {
+            self.protocol = protocol.iter().collect();
+        }
+    }
+
     #[wasm_bindgen(getter = search)]
     pub fn get_search(&self) -> String {
         self.search.clone()
