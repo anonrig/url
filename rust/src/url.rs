@@ -114,6 +114,12 @@ impl URL {
                 }
                 ':' => {
                     serialized.push(c.to_ascii_lowercase());
+
+                    // Disable setting protocol as ":"
+                    if serialized.len() == 1 {
+                        return Err(());
+                    }
+                    
                     return Ok(serialized);
                 }
                 _ => {
