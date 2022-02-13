@@ -130,7 +130,7 @@ impl URLSearchParams {
     #[wasm_bindgen]
     pub fn set(&mut self, name: String, value: String) {
         self.params.retain(|p| p.0 != name);
-        self.append(name, value);
+        self.params.push((name, value));
     }
 
     /// Sorts all key/value pairs contained in this object in place and returns undefined.
