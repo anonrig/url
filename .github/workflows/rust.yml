@@ -39,7 +39,7 @@ jobs:
         run: wasm-pack test --node
         working-directory: rust
       - name: Build wasm
-        run: wasm-pack build --target nodejs --out-dir out
+        run: wasm-pack build --target nodejs --out-dir out --release
         working-directory: rust
       - name: Update NPM package version
         run: npm version prerelease --preid=ci-$GITHUB_RUN_ID --no-git-tag-version
