@@ -1,3 +1,4 @@
+use std::str::Chars;
 use wasm_bindgen::prelude::*;
 
 #[allow(clippy::unused_unit)]
@@ -19,7 +20,17 @@ pub struct URL {
 #[wasm_bindgen]
 impl URL {
     #[wasm_bindgen(constructor)]
-    pub fn new(_url: String, _base: Option<String>) -> URL {
+    pub fn new(url: Option<String>, _base: Option<String>) -> URL {
+        let mut protocol = "".to_string();
+
+        if let Some(url) = url {
+            let characters: Chars = url.chars();
+
+            if let Ok(parsed_protocol) = URL::parse_protocol(characters) {
+                protocol = parsed_protocol.iter().collect();
+            }
+        }
+
         URL {
             hash: "".to_string(),
             host: "".to_string(),
@@ -29,7 +40,7 @@ impl URL {
             password: "".to_string(),
             pathname: "".to_string(),
             port: "".to_string(),
-            protocol: "".to_string(),
+            protocol,
             search: "".to_string(),
         }
     }
@@ -82,5 +93,28 @@ impl URL {
     #[wasm_bindgen(getter = search)]
     pub fn get_search(&self) -> String {
         self.search.clone()
+    }
+}
+
+impl URL {
+    fn parse_protocol(input: Chars) -> Result<Vec<char>, ()> {
+        let mut serialized: Vec<char> = Vec::new();
+
+        for c in input {
+            match c {
+                'a'..='z' | 'A'..='Z' | '0'..='9' | '+' | '-' | '.' => {
+                    serialized.push(c.to_ascii_lowercase())
+                }
+                ':' => {
+                    serialized.push(c.to_ascii_lowercase());
+                    return Ok(serialized);
+                }
+                _ => {
+                    return Err(());
+                }
+            }
+        }
+
+        Err(())
     }
 }
