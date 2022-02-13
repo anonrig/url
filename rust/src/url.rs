@@ -119,7 +119,7 @@ impl URL {
                     if serialized.len() == 1 {
                         return Err(());
                     }
-                    
+
                     return Ok(serialized);
                 }
                 _ => {
