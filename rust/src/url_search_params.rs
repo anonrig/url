@@ -58,7 +58,7 @@ impl URLSearchParams {
         self.params
             .iter()
             .map(|p| {
-                let as_array = Array::new();
+                let as_array = Array::new_with_length(2);
                 as_array.push(&JsValue::from_str(p.0.as_str()));
                 as_array.push(&JsValue::from_str(p.1.as_str()));
                 as_array
@@ -101,9 +101,14 @@ impl URLSearchParams {
     pub fn get_all(&self, name: String) -> Array {
         self.params
             .iter()
-            .filter(|p| p.0 == name)
-            .map(|p| JsValue::from(&p.1))
-            .collect::<js_sys::Array>()
+            .filter_map(|p| {
+                if p.0 == name {
+                    Some(JsValue::from(&p.1))
+                } else {
+                    None
+                }
+            })
+            .collect::<Array>()
     }
 
     /// Returns a boolean value that indicates whether a parameter with the specified name exists.
@@ -121,7 +126,7 @@ impl URLSearchParams {
             .collect::<HashSet<_>>()
             .into_iter()
             .map(JsValue::from)
-            .collect::<js_sys::Array>()
+            .collect::<Array>()
     }
 
     /// Sets the value associated with a given search parameter to the given value.
@@ -155,7 +160,7 @@ impl URLSearchParams {
     pub fn values(&self) -> Array {
         self.params
             .iter()
-            .map(|p| JsValue::from_str(p.1.as_str()))
-            .collect::<js_sys::Array>()
+            .map(|p| JsValue::from(&p.1))
+            .collect::<Array>()
     }
 }
