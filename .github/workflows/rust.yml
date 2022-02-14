@@ -22,32 +22,25 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-        working-directory: rust
       - name: Cargo Clippy
         run: cargo clippy
-        working-directory: rust
       - name: Cargo Format
         run: cargo fmt --check
-        working-directory: rust
       - name: Build
         run: cargo build
-        working-directory: rust
       - name: Run tests
         run: cargo test
-        working-directory: rust
       - name: Run wasm tests
         run: wasm-pack test --node
-        working-directory: rust
       - name: Build wasm
         run: wasm-pack build --target nodejs --out-dir out --release
-        working-directory: rust
       - name: Update NPM package version
         run: npm version prerelease --preid=ci-$GITHUB_RUN_ID --no-git-tag-version
-        working-directory: rust/out
+        working-directory: out
         if: ${{ github.ref == 'refs/heads/main' }}
       - name: Publish to NPM
         run: npm publish --access=public --tag=alpha
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        working-directory: rust/out
+        working-directory: out
         if: ${{ github.ref == 'refs/heads/main' }}

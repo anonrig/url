@@ -1,4 +1,4 @@
-use js_sys::Array;
+use js_sys::{Array, JsString};
 use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
 use wasm_bindgen::prelude::*;
