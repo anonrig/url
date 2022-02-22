@@ -38,11 +38,36 @@ fn new_should_accept_array() {
         ("name".to_string(), "second-value".to_string()),
     ];
     let props = create_array_from_tuples(tuples);
-    println!("props {:?}", props);
     let params = URLSearchParams::new(&JsValue::from(props)).unwrap();
     assert_eq!(
         params.to_js_string(),
         "name=value&name=second-value".to_string()
+    );
+}
+
+#[wasm_bindgen_test]
+fn new_should_accept_string() {
+    let params = URLSearchParams::new(&JsValue::from("name=url&type=parser".to_string())).unwrap();
+    assert_eq!(
+        params.values().to_vec(),
+        ["url".to_string(), "parser".to_string()].map(JsValue::from)
+    );
+    assert_eq!(
+        params.keys().to_vec(),
+        ["type".to_string(), "name".to_string()].map(JsValue::from)
+    );
+}
+
+#[wasm_bindgen_test]
+fn new_should_accept_strings_starting_with_questionmark() {
+    let params = URLSearchParams::new(&JsValue::from("?name=url".to_string())).unwrap();
+    assert_eq!(
+        params.values().to_vec(),
+        ["url".to_string()].map(JsValue::from)
+    );
+    assert_eq!(
+        params.keys().to_vec(),
+        ["name".to_string()].map(JsValue::from)
     );
 }
 

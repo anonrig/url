@@ -38,6 +38,21 @@ impl URLSearchParams {
                 serde_wasm_bindgen::from_value(JsValue::from(props))?;
 
             internal_params = hash.into_iter().map(|(k, v)| (k, v)).collect::<Vec<_>>()
+        } else if props.is_string() {
+            if let Some(mut value) = props.as_string() {
+                value = if value.starts_with('?') {
+                    value[1..value.len()].to_string()
+                } else {
+                    value
+                };
+                value.split('&').for_each(|key_value| {
+                    let mut pair = key_value.split('=');
+
+                    if let (Some(key), Some(value)) = (pair.next(), pair.next()) {
+                        internal_params.push((key.to_string(), value.to_string()));
+                    }
+                })
+            }
         }
 
         Ok(URLSearchParams {
