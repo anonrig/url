@@ -97,8 +97,8 @@ impl URLSearchParams {
         for parameter in &self.params {
             let _ = callback.call2(
                 &null,
-                &JsValue::from_str(&parameter.0),
                 &JsValue::from_str(&parameter.1),
+                &JsValue::from_str(&parameter.0),
             );
         }
     }
