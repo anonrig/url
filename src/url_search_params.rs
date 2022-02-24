@@ -1,5 +1,5 @@
 use js_sys::Array;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::vec::Vec;
 use wasm_bindgen::prelude::*;
 
@@ -74,8 +74,8 @@ impl URLSearchParams {
             .iter()
             .map(|p| {
                 let as_array = Array::of2(
-                    &JsValue::from_str(p.0.as_str()), 
-                    &JsValue::from_str(p.1.as_str())
+                    &JsValue::from_str(p.0.as_str()),
+                    &JsValue::from_str(p.1.as_str()),
                 );
                 as_array
             })
