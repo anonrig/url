@@ -73,9 +73,10 @@ impl URLSearchParams {
         self.params
             .iter()
             .map(|p| {
-                let as_array = Array::new_with_length(2);
-                as_array.push(&JsValue::from_str(p.0.as_str()));
-                as_array.push(&JsValue::from_str(p.1.as_str()));
+                let as_array = Array::of2(
+                    &JsValue::from_str(p.0.as_str()), 
+                    &JsValue::from_str(p.1.as_str())
+                );
                 as_array
             })
             .collect::<js_sys::Array>()
