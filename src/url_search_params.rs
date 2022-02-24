@@ -138,10 +138,7 @@ impl URLSearchParams {
     pub fn keys(&self) -> Array {
         self.params
             .iter()
-            .map(|p| &p.0)
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .map(JsValue::from)
+            .map(|p| JsValue::from(&p.0))
             .collect::<Array>()
     }
 
