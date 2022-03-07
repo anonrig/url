@@ -54,7 +54,7 @@ fn new_should_accept_string() {
     );
     assert_eq!(
         params.keys().to_vec(),
-        ["type".to_string(), "name".to_string()].map(JsValue::from)
+        ["name".to_string(), "type".to_string()].map(JsValue::from)
     );
 }
 
@@ -139,7 +139,7 @@ fn has_should_return_boolean() {
 }
 
 #[wasm_bindgen_test]
-fn keys_should_return_all_unique_keys() {
+fn keys_should_return_all_keys() {
     let mut params = URLSearchParams::new(&JsValue::undefined()).unwrap();
     params.append("common".to_string(), "value1".to_string());
     params.append("common".to_string(), "value2".to_string());
@@ -148,7 +148,14 @@ fn keys_should_return_all_unique_keys() {
     params.set("abc".to_string(), "first".to_string());
     assert_eq!(
         params.keys().to_vec(),
-        ["abc".to_string(), "hello".to_string(), "common".to_string()].map(JsValue::from)
+        [
+            "common".to_string(),
+            "common".to_string(),
+            "common".to_string(),
+            "hello".to_string(),
+            "abc".to_string(),
+        ]
+        .map(JsValue::from)
     );
 }
 
