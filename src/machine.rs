@@ -1,4 +1,7 @@
-use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
+use crate::encode_sets::{
+    FRAGMENT_PERCENT_ENCODE_SET, QUERY_PERCENT_ENCODE_SET, SPECIAL_QUERY_PERCENT_ENCODE_SET,
+    USER_INFO_PERCENT_ENCODE_SET,
+};
 use crate::platform::{is_normalized_windows_drive_letter, starts_with_windows_drive_letter};
 use crate::state::{Code, State, SPECIAL_SCHEMES};
 use crate::string::{is_ascii_alphanumeric, is_ascii_digit};
@@ -75,7 +78,7 @@ impl URLStateMachine {
                 State::SpecialRelativeOrAuthority => {
                     machine.special_relative_or_authority_state(Some(byte))
                 }
-                State::Query => None,
+                State::Query => machine.query_state(Some(byte)),
                 State::Path => None,
                 State::PathStart => machine.path_start_state(Some(byte)),
                 State::OpaquePath => machine.opaque_path_state(Some(byte)),
@@ -481,6 +484,56 @@ impl URLStateMachine {
         // Otherwise, validation error, return failure.
         else {
             return Some(Code::Failure);
+        }
+
+        None
+    }
+
+    fn query_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If encoding is not UTF-8 and one of the following is true:
+        // - url is not special
+        // - url’s scheme is "ws" or "wss"
+        // then set encoding to UTF-8.
+        if self.encoding_override != "utf-8"
+            && (!self.is_special_url || self.url.scheme == *"ws" || self.url.scheme == *"wss")
+        {
+            self.encoding_override = "utf-8".to_string();
+        }
+
+        // If one of the following is true:
+        // - state override is not given and c is U+0023 (#)
+        // - c is the EOF code point
+        if (!self.state_override && code == Some(35)) || code.is_none() {
+            // Let queryPercentEncodeSet be the special-query percent-encode set if url is special; otherwise the query percent-encode set.
+            let encoding_set = if self.is_special_url {
+                SPECIAL_QUERY_PERCENT_ENCODE_SET
+            } else {
+                QUERY_PERCENT_ENCODE_SET
+            };
+
+            // Percent-encode after encoding, with encoding, buffer, and queryPercentEncodeSet, and append the result to url’s query.
+            if let Some(query) = self.url.query.clone() {
+                self.url.query = Some(
+                    query
+                        + utf8_percent_encode(self.buffer.as_str(), encoding_set)
+                            .to_string()
+                            .borrow(),
+                );
+            }
+
+            // Set buffer to the empty string.
+            self.buffer = "".to_string();
+
+            // If c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
+            if code == Some(35) {
+                self.state = State::Fragment;
+            }
+        }
+        // Otherwise, if c is not the EOF code point
+        else if let Some(unwrapped_code) = code {
+            // Append c to buffer
+            let input = [unwrapped_code];
+            self.buffer += from_utf8(input.borrow()).unwrap();
         }
 
         None
