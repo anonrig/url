@@ -46,7 +46,13 @@ impl URLStateMachine {
             input: input.to_string(),
         };
 
-        for byte in input.bytes() {
+        // If input contains any leading or trailing C0 control or space, validation error.
+        // If input contains any ASCII tab or newline, validation error.
+        let trimmed_input = input
+            .trim_matches(|c: char| c.is_ascii_control() && c.is_ascii_whitespace())
+            .replace(|c: char| c.is_ascii_whitespace(), "");
+
+        for byte in trimmed_input.bytes() {
             let result = match machine.state {
                 State::Authority => machine.authority_state(Some(byte)),
                 State::SchemeStart => machine.scheme_start_state(Some(byte)),
@@ -304,8 +310,8 @@ impl URLStateMachine {
             }
             _ => {
                 // If c is not the EOF code point, UTF-8 percent-encode c using the C0 control percent-encode set and append the result to url’s path.
-                if code != None {
-                    let input = [code.unwrap()];
+                if let Some(unwrapped_code) = code {
+                    let input = [unwrapped_code];
                     self.url.path.push(
                         utf8_percent_encode(from_utf8(input.borrow()).unwrap(), CONTROLS)
                             .to_string(),
