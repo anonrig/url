@@ -27,3 +27,6 @@ pub const USER_INFO_PERCENT_ENCODE_SET: &AsciiSet = &PATH_PERCENT_ENCODE_SET
 /// The fragment percent-encode set is the C0 control percent-encode set and U+0020 SPACE, U+0022 ("), U+003C (<), U+003E (>), and U+0060 (`).
 pub const FRAGMENT_PERCENT_ENCODE_SET: &AsciiSet =
     &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
+
+/// The special-query percent-encode set is the query percent-encode set and U+0027 (').
+pub const SPECIAL_QUERY_PERCENT_ENCODE_SET: &AsciiSet = &QUERY_PERCENT_ENCODE_SET.add(b'\'');
