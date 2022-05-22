@@ -1,9 +1,9 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::str::from_utf8;
-use percent_encoding::utf8_percent_encode;
 use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
 use crate::state::{Code, State};
 use crate::url::URL;
+use percent_encoding::utf8_percent_encode;
+use std::borrow::Borrow;
+use std::str::from_utf8;
 
 pub struct URLStateMachine {
     buffer: String,
@@ -21,7 +21,12 @@ pub struct URLStateMachine {
 }
 
 impl URLStateMachine {
-    pub fn new(input: &str, base: Option<URL>, encoding_override: Option<String>, state_override: Option<State>) -> URLStateMachine {
+    pub fn new(
+        input: &str,
+        base: Option<URL>,
+        encoding_override: Option<String>,
+        state_override: Option<State>,
+    ) -> URLStateMachine {
         let mut machine = URLStateMachine {
             buffer: "".to_string(),
             at_sign_seen: false,
@@ -29,7 +34,7 @@ impl URLStateMachine {
             password_token_seen: false,
             pointer: 0,
             failure: false,
-            encoding_override: encoding_override.unwrap_or("utf-8".to_string()),
+            encoding_override: encoding_override.unwrap_or_else(|| "utf-8".to_string()),
             is_special_url: false,
             state: state_override.unwrap_or(State::SchemeStart),
             base,
@@ -37,20 +42,14 @@ impl URLStateMachine {
             input: input.to_string(),
         };
 
-        machine.process(input.borrow());
-
-        machine
-    }
-
-    fn process(&mut self, input: &str) {
         for byte in input.bytes() {
-            let result = match self.state {
-                State::Authority => self.authority_state(Some(byte)),
+            let result = match machine.state {
+                State::Authority => machine.authority_state(Some(byte)),
                 State::SchemeStart => None,
                 State::Scheme => None,
                 State::Host => None,
                 State::NoScheme => None,
-                State::Fragment => self.fragment_state(Some(byte)),
+                State::Fragment => machine.fragment_state(Some(byte)),
                 State::Relative => None,
                 State::RelativeSlash => None,
                 State::File => None,
@@ -70,7 +69,7 @@ impl URLStateMachine {
             match result {
                 None => {}
                 Some(Code::Failure) => {
-                    self.failure = true;
+                    machine.failure = true;
                     break;
                 }
                 Some(Code::Exit) => {
@@ -78,11 +77,12 @@ impl URLStateMachine {
                 }
             }
         }
+
+        machine
     }
 }
 
 impl URLStateMachine {
-
     fn authority_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is U+0040 (@), then:
         if code == Some(64) {
@@ -97,13 +97,17 @@ impl URLStateMachine {
             for code_point in self.buffer.bytes() {
                 // If codePoint is U+003A (:) and passwordTokenSeen is false, then set passwordTokenSeen to true and continue.
                 if code_point == 58 && !self.password_token_seen {
-                    self.password_token_seen;
+                    self.password_token_seen = true;
                     continue;
                 }
 
                 // Let encodedCodePoints be the result of running UTF-8 percent-encode codePoint using the userinfo percent-encode set.
                 let input = [code.unwrap()];
-                let encoded_code_points = utf8_percent_encode(from_utf8(input.borrow()).unwrap(), USER_INFO_PERCENT_ENCODE_SET).to_string();
+                let encoded_code_points = utf8_percent_encode(
+                    from_utf8(input.borrow()).unwrap(),
+                    USER_INFO_PERCENT_ENCODE_SET,
+                )
+                .to_string();
 
                 // If passwordTokenSeen is true, then append encodedCodePoints to url’s password.
                 if self.password_token_seen {
@@ -119,7 +123,12 @@ impl URLStateMachine {
         // Otherwise, if one of the following is true:
         // - c is the EOF code point, U+002F (/), U+003F (?), or U+0023 (#)
         // - url is special and c is U+005C (\)
-        else if code.is_none() || code == Some(47) || code == Some(63) || code == Some(35) || (self.is_special_url && code == Some(92)) {
+        else if code.is_none()
+            || code == Some(47)
+            || code == Some(63)
+            || code == Some(35)
+            || (self.is_special_url && code == Some(92))
+        {
             // If atSignSeen is true and buffer is the empty string, validation error, return failure.
             if self.at_sign_seen && self.buffer.len() == 1 {
                 return Some(Code::Failure);
@@ -132,7 +141,8 @@ impl URLStateMachine {
         }
         // Otherwise, append c to buffer.
         else {
-            self.buffer.push_str(from_utf8(vec![code.unwrap()].borrow()).unwrap());
+            self.buffer
+                .push_str(from_utf8(vec![code.unwrap()].borrow()).unwrap());
         }
 
         None
@@ -140,9 +150,10 @@ impl URLStateMachine {
 
     fn fragment_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is not the EOF code point, then:
-        if let Some(code) = code {
-            let fragment = self.input[self.pointer.borrow()..self.input.len()];
-            self.url.fragment = Some(utf8_percent_encode(fragment, FRAGMENT_PERCENT_ENCODE_SET).to_string());
+        if let Some(_code) = code {
+            let fragment = &self.input[self.pointer..self.input.len()];
+            self.url.fragment =
+                Some(utf8_percent_encode(fragment, FRAGMENT_PERCENT_ENCODE_SET).to_string());
         }
 
         Some(Code::Exit)
