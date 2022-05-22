@@ -1,4 +1,5 @@
 use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
+use crate::platform::is_normalized_windows_drive_letter;
 use crate::state::{Code, State, SPECIAL_SCHEMES};
 use crate::string::is_ascii_alphanumeric;
 use crate::url::URL;
@@ -53,7 +54,7 @@ impl URLStateMachine {
                 State::Host => None,
                 State::NoScheme => machine.no_scheme_state(Some(byte)),
                 State::Fragment => machine.fragment_state(Some(byte)),
-                State::Relative => None,
+                State::Relative => machine.relative_state(Some(byte)),
                 State::RelativeSlash => None,
                 State::File => None,
                 State::FileHost => None,
@@ -88,6 +89,20 @@ impl URLStateMachine {
         }
 
         machine
+    }
+}
+
+impl URLStateMachine {
+    fn shorten_url(&mut self) {
+        // If url’s scheme is "file", path’s size is 1, and path[0] is a normalized Windows drive letter, then return.
+        if self.url.scheme == *"file"
+            && self.url.path.len() == 1
+            && is_normalized_windows_drive_letter(self.url.path.first().unwrap())
+        {
+            return;
+        }
+
+        self.url.path.pop();
     }
 }
 
@@ -296,6 +311,51 @@ impl URLStateMachine {
                             .to_string(),
                     );
                 }
+            }
+        }
+
+        None
+    }
+
+    fn relative_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // Set url’s scheme to base’s scheme.
+        let base = self.base.as_ref().unwrap();
+
+        self.is_special_url = SPECIAL_SCHEMES.contains_key(base.scheme.as_str());
+        self.url.scheme = base.scheme.clone();
+
+        // If c is U+002F (/), then set state to relative slash state.
+        // Otherwise, if url is special and c is U+005C (\), validation error, set state to relative slash state.
+        if code == Some(47) || (self.is_special_url && code == Some(92)) {
+            self.state = State::RelativeSlash;
+        }
+        // Otherwise:
+        else {
+            // Set url’s username to base’s username, url’s password to base’s password, url’s host to base’s host,
+            // url’s port to base’s port, url’s path to a clone of base’s path, and url’s query to base’s query.
+            self.url.username = base.username.clone();
+            self.url.password = base.password.clone();
+            self.url.host = base.host.clone();
+            self.url.port = base.port;
+            self.url.path = base.path.clone();
+            self.url.query = base.query.clone();
+
+            // If c is U+003F (?), then set url’s query to the empty string, and state to query state.
+            if code == Some(63) {
+                self.url.query = Some("".to_string());
+                self.state = State::Query;
+            }
+            // Otherwise, if c is U+0023 (#), set url’s fragment to the empty string and state to fragment state.
+            else if code == Some(35) {
+                self.url.fragment = Some("".to_string());
+                self.state = State::Fragment;
+            }
+            // Otherwise, if c is not the EOF code point
+            else if code.is_some() {
+                self.url.query = None;
+                self.shorten_url();
+                self.state = State::Path;
+                self.pointer -= 1;
             }
         }
 
