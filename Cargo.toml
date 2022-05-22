@@ -12,6 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 percent-encoding = "2.1.0"
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 

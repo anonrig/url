@@ -1,3 +1,7 @@
+use lazy_static::lazy_static;
+use std::collections::HashMap;
+
+#[derive(Copy, Clone)]
 pub enum State {
     Authority,
     SchemeStart,
@@ -21,7 +25,19 @@ pub enum State {
     Port,
 }
 
+#[derive(Copy, Clone)]
 pub enum Code {
     Failure,
     Exit,
+}
+
+lazy_static! {
+    pub static ref SPECIAL_SCHEMES: HashMap<&'static str, Option<u16>> = HashMap::from([
+        ("ftp", Some(21)),
+        ("file", None),
+        ("http", Some(80)),
+        ("https", Some(443)),
+        ("ws", Some(80)),
+        ("wss", Some(443)),
+    ]);
 }
