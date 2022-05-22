@@ -1,7 +1,7 @@
 use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
 use crate::platform::{is_normalized_windows_drive_letter, starts_with_windows_drive_letter};
 use crate::state::{Code, State, SPECIAL_SCHEMES};
-use crate::string::is_ascii_alphanumeric;
+use crate::string::{is_ascii_alphanumeric, is_ascii_digit};
 use crate::url::URL;
 use percent_encoding::{utf8_percent_encode, CONTROLS};
 use std::borrow::Borrow;
@@ -73,7 +73,7 @@ impl URLStateMachine {
                 State::Path => None,
                 State::PathStart => None,
                 State::OpaquePath => machine.opaque_path_state(Some(byte)),
-                State::Port => None,
+                State::Port => machine.port_state(Some(byte)),
             };
 
             match result {
@@ -387,7 +387,62 @@ impl URLStateMachine {
         None
     }
 
-    pub fn file_slash_state(&mut self, code: Option<u8>) -> Option<Code> {
+    fn port_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is an ASCII digit, append c to buffer.
+        if is_ascii_digit(code) {
+            self.buffer.push(code.unwrap() as char);
+        }
+        // Otherwise, if one of the following is true:
+        // - c is the EOF code point, U+002F (/), U+003F (?), or U+0023 (#)
+        // - url is special and c is U+005C (\)
+        // - state override is given
+        else if code.is_none()
+            || code == Some(47)
+            || code == Some(63)
+            || code == Some(35)
+            || (self.is_special_url && code == Some(92))
+            || self.state_override
+        {
+            // If buffer is not the empty string, then:
+            if !self.buffer.is_empty() {
+                // Let port be the mathematical integer value that is represented by buffer in radix-10 using ASCII digits for digits with values 0 through 9.
+                let port = self.buffer.parse::<u32>().unwrap();
+
+                // If port is greater than 2^16 − 1, validation error, return failure.
+                if port > (2_i32.pow(16) - 1).try_into().unwrap() {
+                    return Some(Code::Failure);
+                }
+
+                // Set url’s port to null, if port is url’s scheme’s default port; otherwise to port.
+                let default_port = SPECIAL_SCHEMES.get(self.url.scheme.as_str()).unwrap();
+
+                self.url.port = if default_port == Some(port).borrow() {
+                    None
+                } else {
+                    Some(port)
+                };
+
+                // Set buffer to the empty string.
+                self.buffer = "".to_string();
+            }
+            // If state override is given, then return.
+            else if self.state_override {
+                return Some(Code::Exit);
+            }
+
+            // Set state to path start state and decrease pointer by 1.
+            self.state = State::PathStart;
+            self.pointer -= 1;
+        }
+        // Otherwise, validation error, return failure.
+        else {
+            return Some(Code::Failure);
+        }
+
+        None
+    }
+
+    fn file_slash_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is U+002F (/) or U+005C (\), then:
         if code == Some(47) || code == Some(92) {
             self.state = State::FileHost;
