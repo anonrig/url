@@ -6,11 +6,17 @@ pub struct URL {
     pub port: Option<i32>,
     pub path: Vec<String>,
     pub query: Option<String>,
-    pub fragment: Option<String>
+    pub fragment: Option<String>,
+}
+
+impl Default for URL {
+    fn default() -> Self {
+        URL::new()
+    }
 }
 
 impl URL {
-    pub fn new() -> URL {
+    pub fn new() -> Self {
         URL {
             scheme: "".to_string(),
             username: "".to_string(),
@@ -19,7 +25,7 @@ impl URL {
             port: None,
             path: vec![],
             query: None,
-            fragment: None
+            fragment: None,
         }
     }
 }
