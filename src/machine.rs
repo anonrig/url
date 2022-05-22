@@ -1,10 +1,14 @@
 use crate::encode_sets::{
-    FRAGMENT_PERCENT_ENCODE_SET, QUERY_PERCENT_ENCODE_SET, SPECIAL_QUERY_PERCENT_ENCODE_SET,
-    USER_INFO_PERCENT_ENCODE_SET,
+    FRAGMENT_PERCENT_ENCODE_SET, PATH_PERCENT_ENCODE_SET, QUERY_PERCENT_ENCODE_SET,
+    SPECIAL_QUERY_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET,
 };
-use crate::platform::{is_normalized_windows_drive_letter, starts_with_windows_drive_letter};
+use crate::platform::{
+    is_normalized_windows_drive_letter, is_windows_drive_letter, starts_with_windows_drive_letter,
+};
 use crate::state::{Code, State, SPECIAL_SCHEMES};
-use crate::string::{is_ascii_alphanumeric, is_ascii_digit};
+use crate::string::{
+    is_ascii_alphanumeric, is_ascii_digit, is_double_dot_path_segment, is_single_dot_path_segment,
+};
 use crate::url::URL;
 use percent_encoding::{utf8_percent_encode, CONTROLS};
 use std::borrow::Borrow;
@@ -55,6 +59,7 @@ impl URLStateMachine {
             .trim_matches(|c: char| c.is_ascii_control() && c.is_ascii_whitespace())
             .replace(|c: char| c.is_ascii_whitespace(), "");
 
+        // TODO: Traverse one more time after loop finishes
         for byte in trimmed_input.bytes() {
             let result = match machine.state {
                 State::Authority => machine.authority_state(Some(byte)),
@@ -79,7 +84,7 @@ impl URLStateMachine {
                     machine.special_relative_or_authority_state(Some(byte))
                 }
                 State::Query => machine.query_state(Some(byte)),
-                State::Path => None,
+                State::Path => machine.path_state(Some(byte)),
                 State::PathStart => machine.path_start_state(Some(byte)),
                 State::OpaquePath => machine.opaque_path_state(Some(byte)),
                 State::Port => machine.port_state(Some(byte)),
@@ -534,6 +539,74 @@ impl URLStateMachine {
             // Append c to buffer
             let input = [unwrapped_code];
             self.buffer += from_utf8(input.borrow()).unwrap();
+        }
+
+        None
+    }
+
+    fn path_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If one of the following is true:
+        // - c is the EOF code point or U+002F (/)
+        // - url is special and c is U+005C (\)
+        // - state override is not given and c is U+003F (?) or U+0023 (#)
+        if code.is_none()
+            || code == Some(47)
+            || (self.is_special_url && code == Some(92))
+            || (!self.state_override && (code == Some(63)) || code == Some(35))
+        {
+            // If buffer is a double-dot path segment, then:
+            if is_double_dot_path_segment(self.buffer.to_lowercase().as_str()) {
+                // Shorten url’s path.
+                self.shorten_url();
+
+                // If neither c is U+002F (/), nor url is special and c is U+005C (\), append the empty string to url’s path.
+                if code != Some(47) && !(self.is_special_url && code == Some(92)) {
+                    self.url.path.push("".to_string());
+                }
+            }
+            // Otherwise, if buffer is a single-dot path segment and if neither c is U+002F (/),
+            // nor url is special and c is U+005C (\), append the empty string to url’s path.
+            else if is_single_dot_path_segment(self.buffer.as_str())
+                && code != Some(47)
+                && !(self.is_special_url && code == Some(92))
+            {
+                self.url.path.push("".to_string());
+            }
+            // Otherwise, if buffer is not a single-dot path segment, then:
+            else if !is_single_dot_path_segment(self.buffer.as_str()) {
+                // If url’s scheme is "file", url’s path is empty, and buffer is a Windows drive letter,
+                // then replace the second code point in buffer with U+003A (:).
+                if self.url.scheme == *"file"
+                    && self.url.path.is_empty()
+                    && is_windows_drive_letter(self.buffer.as_str())
+                {
+                    self.buffer = self.buffer.chars().next().unwrap().to_string() + ":";
+                }
+
+                // Append buffer to url’s path.
+                self.url.path.push(self.buffer.clone());
+            }
+
+            // Set buffer to the empty string.
+            self.buffer = "".to_string();
+
+            // If c is U+003F (?), then set url’s query to the empty string and state to query state.
+            if code == Some(63) {
+                self.url.query = Some("".to_string());
+                self.state = State::Query;
+            } else if code == Some(35) {
+                // If c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
+                self.url.fragment = Some("".to_string());
+                self.state = State::Fragment;
+            }
+        }
+        // Otherwise run these steps:
+        else if let Some(unwrapped_code) = code {
+            let input = [unwrapped_code];
+            self.buffer +=
+                utf8_percent_encode(from_utf8(input.borrow()).unwrap(), PATH_PERCENT_ENCODE_SET)
+                    .to_string()
+                    .as_str();
         }
 
         None
