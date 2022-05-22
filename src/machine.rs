@@ -55,7 +55,7 @@ impl URLStateMachine {
                 State::NoScheme => machine.no_scheme_state(Some(byte)),
                 State::Fragment => machine.fragment_state(Some(byte)),
                 State::Relative => machine.relative_state(Some(byte)),
-                State::RelativeSlash => None,
+                State::RelativeSlash => machine.relative_slash_state(Some(byte)),
                 State::File => None,
                 State::FileHost => None,
                 State::FileSlash => None,
@@ -357,6 +357,31 @@ impl URLStateMachine {
                 self.state = State::Path;
                 self.pointer -= 1;
             }
+        }
+
+        None
+    }
+
+    fn relative_slash_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If url is special and c is U+002F (/) or U+005C (\), then:
+        if (self.is_special_url && code == Some(47)) || code == Some(92) {
+            // Set state to special authority ignore slashes state.
+            self.state = State::SpecialAuthorityIgnoreSlashes
+        }
+        // Otherwise, if c is U+002F (/), then set state to authority state.
+        else if code == Some(47) {
+            self.state = State::Authority;
+        }
+        // Otherwise, set url’s username to base’s username, url’s password to base’s password, url’s host to base’s host,
+        // url’s port to base’s port, state to path state, and then, decrease pointer by 1.
+        else {
+            let base = self.base.as_ref().unwrap();
+            self.url.username = base.username.clone();
+            self.url.password = base.password.clone();
+            self.url.host = base.host.clone();
+            self.url.port = base.port;
+            self.state = State::Path;
+            self.pointer -= 1;
         }
 
         None
