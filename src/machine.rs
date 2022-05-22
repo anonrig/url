@@ -56,9 +56,15 @@ impl URLStateMachine {
                 State::FileHost => None,
                 State::FileSlash => None,
                 State::PathOrAuthority => None,
-                State::SpecialAuthorityIgnoreSlashes => None,
-                State::SpecialAuthoritySlashes => None,
-                State::SpecialRelativeOrAuthority => None,
+                State::SpecialAuthorityIgnoreSlashes => {
+                    machine.special_authority_ignore_slashes_state(Some(byte))
+                }
+                State::SpecialAuthoritySlashes => {
+                    machine.special_authority_slashes_state(Some(byte))
+                }
+                State::SpecialRelativeOrAuthority => {
+                    machine.special_relative_or_authority_state(Some(byte))
+                }
                 State::Query => None,
                 State::Path => None,
                 State::PathStart => None,
@@ -157,5 +163,46 @@ impl URLStateMachine {
         }
 
         Some(Code::Exit)
+    }
+
+    fn special_authority_ignore_slashes_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is neither U+002F (/) nor U+005C (\), then set state to authority state and decrease pointer by 1.
+        if code != Some(47) && code != Some(92) {
+            self.state = State::Authority;
+            self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn special_authority_slashes_state(&mut self, code: Option<u8>) -> Option<Code> {
+        self.state = State::SpecialAuthorityIgnoreSlashes;
+
+        // If c is U+002F (/) and remaining starts with U+002F (/),
+        if code == Some(47) && self.input.chars().nth(self.pointer + 1) == Some('/') {
+            // then set state to special authority ignore slashes state and increase pointer by 1.
+            self.pointer += 1;
+        } else {
+            // Otherwise, validation error, set state to special authority ignore slashes state and decrease pointer by 1.
+            self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn special_relative_or_authority_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is U+002F (/) and remaining starts with U+002F (/),
+        // then set state to special authority ignore slashes state and increase pointer by 1.
+        if code == Some(47) && self.input.chars().nth(self.pointer + 1) == Some('/') {
+            self.state = State::SpecialAuthorityIgnoreSlashes;
+            self.pointer += 1;
+        }
+        // // Otherwise, validation error, set state to relative state and decrease pointer by 1.
+        else {
+            self.state = State::Relative;
+            self.pointer -= 1;
+        }
+
+        None
     }
 }
