@@ -18,10 +18,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16.x'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Cargo Clippy
         run: cargo clippy
       - name: Cargo Format
@@ -30,17 +28,3 @@ jobs:
         run: cargo build
       - name: Run tests
         run: cargo test
-      - name: Run wasm tests
-        run: wasm-pack test --node
-      - name: Build wasm
-        run: wasm-pack build --target nodejs --out-dir out --release
-      - name: Update NPM package version
-        run: npm version prerelease --preid=ci-$GITHUB_RUN_ID --no-git-tag-version
-        working-directory: out
-        if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Publish to NPM
-        run: npm publish --access=public --tag=alpha
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        working-directory: out
-        if: ${{ github.ref == 'refs/heads/main' }}
