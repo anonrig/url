@@ -1,5 +1,5 @@
 use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
-use crate::platform::is_normalized_windows_drive_letter;
+use crate::platform::{is_normalized_windows_drive_letter, starts_with_windows_drive_letter};
 use crate::state::{Code, State, SPECIAL_SCHEMES};
 use crate::string::is_ascii_alphanumeric;
 use crate::url::URL;
@@ -58,7 +58,7 @@ impl URLStateMachine {
                 State::RelativeSlash => machine.relative_slash_state(Some(byte)),
                 State::File => None,
                 State::FileHost => None,
-                State::FileSlash => None,
+                State::FileSlash => machine.file_slash_state(Some(byte)),
                 State::PathOrAuthority => machine.path_or_authority_state(Some(byte)),
                 State::SpecialAuthorityIgnoreSlashes => {
                     machine.special_authority_ignore_slashes_state(Some(byte))
@@ -380,6 +380,38 @@ impl URLStateMachine {
             self.url.password = base.password.clone();
             self.url.host = base.host.clone();
             self.url.port = base.port;
+            self.state = State::Path;
+            self.pointer -= 1;
+        }
+
+        None
+    }
+
+    pub fn file_slash_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is U+002F (/) or U+005C (\), then:
+        if code == Some(47) || code == Some(92) {
+            self.state = State::FileHost;
+        }
+        // Otherwise:
+        else {
+            // If base is non-null and base’s scheme is "file", then:
+            if self.base.is_some() && self.base.as_ref().unwrap().scheme == *"file" {
+                let base = self.base.as_ref().unwrap();
+
+                // Set url’s host to base’s host.
+                self.url.host = base.host.clone();
+
+                // If the code point substring from pointer to the end of input does not start with a Windows drive
+                // letter and base’s path[0] is a normalized Windows drive letter, then append base’s path[0] to url’s path.
+                if !starts_with_windows_drive_letter(self.input.as_str(), self.pointer as usize)
+                    && !base.path.is_empty()
+                    && is_normalized_windows_drive_letter(base.path.first().unwrap())
+                {
+                    self.url.path.push(base.path.first().unwrap().to_string())
+                }
+            }
+
+            // Set state to path state, and decrease pointer by 1.
             self.state = State::Path;
             self.pointer -= 1;
         }
