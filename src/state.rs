@@ -32,7 +32,7 @@ pub enum Code {
 }
 
 lazy_static! {
-    pub static ref SPECIAL_SCHEMES: HashMap<&'static str, Option<u16>> = HashMap::from([
+    pub static ref SPECIAL_SCHEMES: HashMap<&'static str, Option<u32>> = HashMap::from([
         ("ftp", Some(21)),
         ("file", None),
         ("http", Some(80)),
