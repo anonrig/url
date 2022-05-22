@@ -1,5 +1,6 @@
 use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
-use crate::state::{Code, State};
+use crate::state::{Code, State, SPECIAL_SCHEMES};
+use crate::string::is_ascii_alphanumeric;
 use crate::url::URL;
 use percent_encoding::{utf8_percent_encode, CONTROLS};
 use std::borrow::Borrow;
@@ -50,7 +51,7 @@ impl URLStateMachine {
                 State::SchemeStart => machine.scheme_start_state(Some(byte)),
                 State::Scheme => None,
                 State::Host => None,
-                State::NoScheme => None,
+                State::NoScheme => machine.no_scheme_state(Some(byte)),
                 State::Fragment => machine.fragment_state(Some(byte)),
                 State::Relative => None,
                 State::RelativeSlash => None,
@@ -93,7 +94,7 @@ impl URLStateMachine {
 impl URLStateMachine {
     fn scheme_start_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is an ASCII alpha, append c, lowercased, to buffer, and set state to scheme state.
-        if code.is_some() && (code.unwrap() as char).is_ascii_alphanumeric() {
+        if is_ascii_alphanumeric(code) {
             self.buffer
                 .push_str((code.unwrap() as char).to_lowercase().to_string().as_str());
             self.state = State::Scheme;
@@ -106,6 +107,39 @@ impl URLStateMachine {
         // Otherwise, validation error, return failure.
         else {
             return Some(Code::Failure);
+        }
+
+        None
+    }
+
+    fn no_scheme_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If base is null, or base has an opaque path and c is not U+0023 (#), validation error, return failure.
+        // TODO: Handle opaque path
+        if self.base.is_none() || code != Some(35) {
+            return Some(Code::Failure);
+        }
+
+        let base = self.base.as_ref().unwrap();
+
+        // Otherwise, if base has an opaque path and c is U+0023 (#), set url’s scheme to base’s scheme,
+        // url’s path to base’s path, url’s query to base’s query, url’s fragment to the empty string,
+        // and set state to fragment state.
+        if code == Some(35) {
+            self.is_special_url = SPECIAL_SCHEMES.contains_key(base.scheme.as_str());
+            self.url.scheme = base.scheme.clone();
+            self.url.path = base.path.clone();
+            self.url.query = base.query.clone();
+            self.url.fragment = Some("".to_string());
+        }
+        // Otherwise, if base’s scheme is not 'file', set state to relative state and decrease pointer by 1.
+        else if base.scheme != "file".to_lowercase() {
+            self.state = State::Relative;
+            self.pointer -= 1;
+        }
+        // Otherwise, set state to file state and decrease pointer by 1.
+        else {
+            self.state = State::File;
+            self.pointer -= 1;
         }
 
         None

@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct URL {
     pub scheme: String,
     pub username: String,
