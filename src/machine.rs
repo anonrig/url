@@ -55,7 +55,7 @@ impl URLStateMachine {
                 State::File => None,
                 State::FileHost => None,
                 State::FileSlash => None,
-                State::PathOrAuthority => None,
+                State::PathOrAuthority => machine.path_or_authority_state(Some(byte)),
                 State::SpecialAuthorityIgnoreSlashes => {
                     machine.special_authority_ignore_slashes_state(Some(byte))
                 }
@@ -200,6 +200,20 @@ impl URLStateMachine {
         // // Otherwise, validation error, set state to relative state and decrease pointer by 1.
         else {
             self.state = State::Relative;
+            self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn path_or_authority_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is U+002F (/), then set state to authority state.
+        if code == Some(47) {
+            self.state = State::Authority;
+        }
+        // Otherwise, set state to path state, and decrease pointer by 1.
+        else {
+            self.state = State::Path;
             self.pointer -= 1;
         }
 
