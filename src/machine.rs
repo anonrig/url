@@ -12,6 +12,7 @@ pub struct URLStateMachine {
     password_token_seen: bool,
     pointer: usize,
     failure: bool,
+    state_override: bool,
     encoding_override: String,
     is_special_url: bool,
     state: State,
@@ -34,6 +35,7 @@ impl URLStateMachine {
             password_token_seen: false,
             pointer: 0,
             failure: false,
+            state_override: state_override.is_some(),
             encoding_override: encoding_override.unwrap_or_else(|| "utf-8".to_string()),
             is_special_url: false,
             state: state_override.unwrap_or(State::SchemeStart),
@@ -45,7 +47,7 @@ impl URLStateMachine {
         for byte in input.bytes() {
             let result = match machine.state {
                 State::Authority => machine.authority_state(Some(byte)),
-                State::SchemeStart => None,
+                State::SchemeStart => machine.scheme_start_state(Some(byte)),
                 State::Scheme => None,
                 State::Host => None,
                 State::NoScheme => None,
@@ -89,6 +91,26 @@ impl URLStateMachine {
 }
 
 impl URLStateMachine {
+    fn scheme_start_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is an ASCII alpha, append c, lowercased, to buffer, and set state to scheme state.
+        if code.is_some() && (code.unwrap() as char).is_ascii_alphanumeric() {
+            self.buffer
+                .push_str((code.unwrap() as char).to_lowercase().to_string().as_str());
+            self.state = State::Scheme;
+        }
+        // Otherwise, if state override is not given, set state to no scheme state and decrease pointer by 1.
+        else if !self.state_override {
+            self.state = State::NoScheme;
+            self.pointer -= 1;
+        }
+        // Otherwise, validation error, return failure.
+        else {
+            return Some(Code::Failure);
+        }
+
+        None
+    }
+
     fn authority_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is U+0040 (@), then:
         if code == Some(64) {
