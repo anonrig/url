@@ -1,7 +1,7 @@
 use crate::encode_sets::{FRAGMENT_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET};
 use crate::state::{Code, State};
 use crate::url::URL;
-use percent_encoding::utf8_percent_encode;
+use percent_encoding::{utf8_percent_encode, CONTROLS};
 use std::borrow::Borrow;
 use std::str::from_utf8;
 
@@ -68,7 +68,7 @@ impl URLStateMachine {
                 State::Query => None,
                 State::Path => None,
                 State::PathStart => None,
-                State::OpaquePath => None,
+                State::OpaquePath => machine.opaque_path_state(Some(byte)),
                 State::Port => None,
             };
 
@@ -215,6 +215,32 @@ impl URLStateMachine {
         else {
             self.state = State::Path;
             self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn opaque_path_state(&mut self, code: Option<u8>) -> Option<Code> {
+        match code {
+            Some(63) => {
+                // If c is U+003F (?), then set url’s query to the empty string and state to query state.
+                self.url.query = Some("".to_string());
+                self.state = State::Query;
+            }
+            Some(35) => {
+                // Otherwise, if c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
+                self.state = State::Fragment;
+            }
+            _ => {
+                // If c is not the EOF code point, UTF-8 percent-encode c using the C0 control percent-encode set and append the result to url’s path.
+                if code != None {
+                    let input = [code.unwrap()];
+                    self.url.path.push(
+                        utf8_percent_encode(from_utf8(input.borrow()).unwrap(), CONTROLS)
+                            .to_string(),
+                    );
+                }
+            }
         }
 
         None
