@@ -71,7 +71,7 @@ impl URLStateMachine {
                 }
                 State::Query => None,
                 State::Path => None,
-                State::PathStart => None,
+                State::PathStart => machine.path_start_state(Some(byte)),
                 State::OpaquePath => machine.opaque_path_state(Some(byte)),
                 State::Port => machine.port_state(Some(byte)),
             };
@@ -382,6 +382,44 @@ impl URLStateMachine {
             self.url.port = base.port;
             self.state = State::Path;
             self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn path_start_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If url is special, then:
+        if self.is_special_url {
+            // Set state to path state.
+            self.state = State::Path;
+
+            // If c is neither U+002F (/) nor U+005C (\), then decrease pointer by 1.
+            if code != Some(47) && code != Some(92) {
+                self.pointer -= 1;
+            }
+        }
+        // Otherwise, if state override is not given and c is U+003F (?), set url’s query to the empty string and state to query state.
+        else if !self.state_override && code == Some(63) {
+            self.url.query = Some("".to_string());
+            self.state = State::Query;
+        }
+        // Otherwise, if state override is not given and c is U+0023 (#), set url’s fragment to the empty string and state to fragment state.
+        else if !self.state_override && code == Some(35) {
+            self.state = State::Fragment;
+        }
+        // Otherwise, if c is not the EOF code point:
+        else if code.is_some() {
+            // Set state to path state.
+            self.state = State::Path;
+
+            // If c is not U+002F (/), then decrease pointer by 1.
+            if code != Some(47) {
+                self.pointer -= 1;
+            }
+        }
+        // Otherwise, if state override is given and url’s host is null, append the empty string to url’s path.
+        else if self.state_override && self.url.host.is_none() {
+            self.url.path.push("/".to_string());
         }
 
         None
