@@ -20,13 +20,13 @@ pub struct URLStateMachine {
     inside_brackets: bool,
     password_token_seen: bool,
     pointer: usize,
-    failure: bool,
+    pub failure: bool,
     state_override: bool,
     encoding_override: String,
     is_special_url: bool,
     state: State,
     base: Option<URL>,
-    url: URL,
+    pub url: URL,
     input: String,
 }
 

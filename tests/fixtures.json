@@ -1432,7 +1432,6 @@
     "search": "",
     "hash": ""
   },
-  "# Based on https://felixfbecker.github.io/whatwg-url-custom-host-repro/",
   {
     "input": "ssh://example.com/foo/bar.git",
     "base": "http://example.org/",
@@ -1448,7 +1447,6 @@
     "search": "",
     "hash": ""
   },
-  "# Based on http://trac.webkit.org/browser/trunk/LayoutTests/fast/url/file.html",
   {
     "input": "file:c:\\foo\\bar.html",
     "base": "file:///tmp/mock/path",
@@ -1715,7 +1713,6 @@
     "search": "",
     "hash": ""
   },
-  "# Based on http://trac.webkit.org/browser/trunk/LayoutTests/fast/url/script-tests/path.js",
   {
     "input": "http://example.com/././foo",
     "base": "about:blank",
@@ -2256,7 +2253,6 @@
     "search": "",
     "hash": ""
   },
-  "# Based on http://trac.webkit.org/browser/trunk/LayoutTests/fast/url/script-tests/relative.js",
   {
     "input": "http://www.google.com/foo?bar=baz#",
     "base": "about:blank",
@@ -3001,7 +2997,6 @@
     "search": "",
     "hash": ""
   },
-  "# Based on http://trac.webkit.org/browser/trunk/LayoutTests/fast/url/segments-userinfo-vs-host.html",
   {
     "input": "http:@www.example.com",
     "base": "about:blank",
@@ -3292,7 +3287,6 @@
     "search": "",
     "hash": ""
   },
-  "# Others",
   {
     "input": "/",
     "base": "http://www.example.com/test",
@@ -3515,8 +3509,6 @@
     "search": "",
     "hash": ""
   },
-  "# Based on http://trac.webkit.org/browser/trunk/LayoutTests/fast/url/host.html",
-  "Basic canonicalization, uppercase should be converted to lowercase",
   {
     "input": "http://ExAmPlE.CoM",
     "base": "http://other.com/",
@@ -3552,13 +3544,11 @@
     "base": "http://other.com/",
     "failure": true
   },
-  "U+3000 is mapped to U+0020 (space) which is disallowed",
   {
     "input": "http://GOO\u00a0\u3000goo.com",
     "base": "http://other.com/",
     "failure": true
   },
-  "Other types of space (no-break, zero-width, zero-width-no-break) are name-prepped away to nothing. U+200B, U+2060, and U+FEFF, are ignored",
   {
     "input": "http://GOO\u200b\u2060\ufeffgoo.com",
     "base": "http://other.com/",
@@ -3574,7 +3564,6 @@
     "search": "",
     "hash": ""
   },
-  "Leading and trailing C0 control or space",
   {
     "input": "\u0000\u001b\u0004\u0012 http://example.com/\u001f \u000d ",
     "base": "about:blank",
@@ -3590,7 +3579,6 @@
     "search": "",
     "hash": ""
   },
-  "Ideographic full stop (full-width period for Chinese, etc.) should be treated as a dot. U+3002 is mapped to U+002E (dot)",
   {
     "input": "http://www.foo。bar.com",
     "base": "http://other.com/",
@@ -3606,19 +3594,16 @@
     "search": "",
     "hash": ""
   },
-  "Invalid unicode characters should fail... U+FDD0 is disallowed; %ef%b7%90 is U+FDD0",
   {
     "input": "http://\ufdd0zyx.com",
     "base": "http://other.com/",
     "failure": true
   },
-  "This is the same as previous but escaped",
   {
     "input": "http://%ef%b7%90zyx.com",
     "base": "http://other.com/",
     "failure": true
   },
-  "U+FFFD",
   {
     "input": "https://\ufffd",
     "base": "about:blank",
@@ -3644,7 +3629,6 @@
     "search": "?%EF%BF%BD",
     "hash": "#%EF%BF%BD"
   },
-  "Test name prepping, fullwidth input should be converted to ASCII and NOT IDN-ized. This is 'Go' in fullwidth UTF-8/UTF-16.",
   {
     "input": "http://Ｇｏ.com",
     "base": "http://other.com/",
@@ -3660,7 +3644,6 @@
     "search": "",
     "hash": ""
   },
-  "URL spec forbids the following. https://www.w3.org/Bugs/Public/show_bug.cgi?id=24257",
   {
     "input": "http://％４１.com",
     "base": "http://other.com/",
@@ -3671,7 +3654,6 @@
     "base": "http://other.com/",
     "failure": true
   },
-  "...%00 in fullwidth should fail (also as escaped UTF-8 input)",
   {
     "input": "http://％００.com",
     "base": "http://other.com/",
@@ -3682,7 +3664,6 @@
     "base": "http://other.com/",
     "failure": true
   },
-  "Basic IDN support, UTF-8 and UTF-16 input should be converted to IDN",
   {
     "input": "http://你好你好",
     "base": "http://other.com/",
@@ -3728,13 +3709,11 @@
     "search": "",
     "hash": ""
   },
-  "Invalid escaped characters should fail and the percents should be escaped. https://www.w3.org/Bugs/Public/show_bug.cgi?id=24191",
   {
     "input": "http://%zz%66%a.com",
     "base": "http://other.com/",
     "failure": true
   },
-  "If we get an invalid character that has been escaped.",
   {
     "input": "http://%25",
     "base": "http://other.com/",
@@ -3745,7 +3724,6 @@
     "base": "http://other.com/",
     "failure": true
   },
-  "Escaped numbers should be treated like IP addresses if they are.",
   {
     "input": "http://%30%78%63%30%2e%30%32%35%30.01",
     "base": "http://other.com/",
@@ -3781,13 +3759,11 @@
     "base": "http://other.com/",
     "failure": true
   },
-  "Invalid escaping in hosts causes failure",
   {
     "input": "http://%3g%78%63%30%2e%30%32%35%30%2E.01",
     "base": "http://other.com/",
     "failure": true
   },
-  "A space in a host causes failure",
   {
     "input": "http://192.168.0.1 hello",
     "base": "http://other.com/",
@@ -3798,7 +3774,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "Fullwidth and escaped UTF-8 fullwidth should still be treated as IP",
   {
     "input": "http://０Ｘｃ０．０２５０．０１",
     "base": "http://other.com/",
@@ -3814,7 +3789,6 @@
     "search": "",
     "hash": ""
   },
-  "Domains with empty labels",
   {
     "input": "http://./",
     "base": "about:blank",
@@ -3860,7 +3834,6 @@
     "search": "",
     "hash": ""
   },
-  "Broken IPv6",
   {
     "input": "http://[www.google.com]/",
     "base": "about:blank",
@@ -3891,7 +3864,6 @@
     "base": "http://other.com/",
     "failure": true
   },
-  "Misc Unicode",
   {
     "input": "http://foo:💩@example.com/bar",
     "base": "http://other.com/",
@@ -3907,7 +3879,6 @@
     "search": "",
     "hash": ""
   },
-  "# resolving a fragment against any scheme succeeds",
   {
     "input": "#",
     "base": "test:test",
@@ -3983,7 +3954,6 @@
     "search": "?test",
     "hash": ""
   },
-  "# multiple @ in authority state",
   {
     "input": "https://@test@test@example:800/",
     "base": "http://doesnotmatter/",
@@ -4014,7 +3984,6 @@
     "search": "",
     "hash": ""
   },
-  "non-az-09 characters",
   {
     "input": "http://`{}:`{}@h/`{}?`{}",
     "base": "http://doesnotmatter/",
@@ -4030,7 +3999,6 @@
     "search": "?`{}",
     "hash": ""
   },
-  "byte is ' and url is special",
   {
     "input": "http://host/?'",
     "base": "about:blank",
@@ -4061,7 +4029,6 @@
     "search": "?'",
     "hash": ""
   },
-  "# Credentials in base",
   {
     "input": "/some/path",
     "base": "http://user@example.org/smth",
@@ -4107,7 +4074,6 @@
     "search": "",
     "hash": ""
   },
-  "# a set of tests designed by zcorpan for relative URLs with unknown schemes",
   {
     "input": "i",
     "base": "sc:sd",
@@ -4403,7 +4369,6 @@
     "search": "",
     "hash": "#i"
   },
-  "# make sure that relative URL logic works on known typically non-relative schemes too",
   {
     "input": "about:/../",
     "base": "about:blank",
@@ -4464,7 +4429,6 @@
     "search": "",
     "hash": ""
   },
-  "# unknown schemes and their hosts",
   {
     "input": "sc://ñ.test/",
     "base": "about:blank",
@@ -4554,7 +4518,6 @@
     "search": "",
     "hash": ""
   },
-  "# unknown schemes and backslashes",
   {
     "input": "sc:\\../",
     "base": "about:blank",
@@ -4570,7 +4533,6 @@
     "search": "",
     "hash": ""
   },
-  "# unknown scheme with path looking like a password",
   {
     "input": "sc::a@example.net",
     "base": "about:blank",
@@ -4586,7 +4548,6 @@
     "search": "",
     "hash": ""
   },
-  "# unknown scheme with bogus percent-encoding",
   {
     "input": "wow:%NBD",
     "base": "about:blank",
@@ -4617,7 +4578,6 @@
     "search": "",
     "hash": ""
   },
-  "# unknown scheme with non-URL characters in the path",
   {
     "input": "wow:\uFFFF",
     "base": "about:blank",
@@ -4633,7 +4593,6 @@
     "search": "",
     "hash": ""
   },
-  "Forbidden host code points",
   {
     "input": "http://a<b",
     "base": "about:blank",
@@ -4664,7 +4623,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "Allowed host code points",
   {
     "input": "http://\u001F!\"$&'()*+,-.;=_`{|}~/",
     "base": "about:blank",
@@ -4695,7 +4653,6 @@
     "search": "",
     "hash": ""
   },
-  "# Hosts and percent-encoding",
   {
     "input": "ftp://example.com%80/",
     "base": "about:blank",
@@ -4746,7 +4703,6 @@
     "search": "",
     "hash": ""
   },
-  "# tests from jsdom/whatwg-url designed for code coverage",
   {
     "input": "http://127.0.0.1:10100/relative_import.html",
     "base": "about:blank",
@@ -4792,7 +4748,6 @@
     "search": "",
     "hash": ""
   },
-  "# tab/LF/CR",
   {
     "input": "h\tt\nt\rp://h\to\ns\rt:9\t0\n0\r0/p\ta\nt\rh?q\tu\ne\rry#f\tr\na\rg",
     "base": "about:blank",
@@ -4808,7 +4763,6 @@
     "search": "?query",
     "hash": "#frag"
   },
-  "# Stringification of URL.searchParams",
   {
     "input": "?a=b&c=d",
     "base": "http://example.org/foo/bar",
@@ -4841,7 +4795,6 @@
     "searchParams": "%3Fa=b&c=d",
     "hash": ""
   },
-  "# Scheme only",
   {
     "input": "http:",
     "base": "http://example.org/foo/bar",
@@ -4879,7 +4832,6 @@
     "searchParams": "",
     "hash": ""
   },
-  "# Percent encoding of fragments",
   {
     "input": "http://foo.bar/baz?qux#foo\bbar",
     "base": "about:blank",
@@ -4960,7 +4912,6 @@
     "searchParams": "qux=",
     "hash": "#foo%60bar"
   },
-  "# IPv4 parsing (via https://github.com/nodejs/node/pull/10317)",
   {
     "input": "http://192.168.257",
     "base": "http://other.com/",
@@ -5146,7 +5097,6 @@
     "search": "",
     "hash": ""
   },
-  "More IPv4 parsing (via https://github.com/jsdom/whatwg-url/issues/92)",
   {
     "input": "https://0x100000000/test",
     "base": "about:blank",
@@ -5157,7 +5107,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "# file URLs containing percent-encoded Windows drive letters (shouldn't work)",
   {
     "input": "file:///C%3A/",
     "base": "about:blank",
@@ -5186,7 +5135,6 @@
     "search": "",
     "hash": ""
   },
-  "# file URLs relative to other file URLs (via https://github.com/jsdom/whatwg-url/pull/60)",
   {
     "input": "pix/submit.gif",
     "base": "file:///C:/Users/Domenic/Dropbox/GitHub/tmpvar/jsdom/test/level2/html/files/anchor.html",
@@ -5229,7 +5177,6 @@
     "search": "",
     "hash": ""
   },
-  "# More file URL tests by zcorpan and annevk",
   {
     "input": "/",
     "base": "file:///C:/a/b",
@@ -5384,7 +5331,6 @@
     "search": "?test",
     "hash": "#x"
   },
-  "# File URLs and many (back)slashes",
   {
     "input": "file:\\\\//",
     "base": "about:blank",
@@ -5595,7 +5541,6 @@
     "search": "",
     "hash": ""
   },
-  "# File URLs with non-empty hosts",
   {
     "input": "/rooibos",
     "base": "file://tea/",
@@ -5624,7 +5569,6 @@
     "search": "?chai",
     "hash": ""
   },
-  "# Windows drive letter handling with the 'file:' base URL",
   {
     "input": "C|",
     "base": "file://host/dir/file",
@@ -5737,7 +5681,6 @@
     "search": "",
     "hash": ""
   },
-  "# Windows drive letter quirk in the file slash state",
   {
     "input": "/c:/foo/bar",
     "base": "file:///c:/baz/qux",
@@ -5794,7 +5737,6 @@
     "search": "",
     "hash": ""
   },
-  "# Windows drive letter quirk with not empty host",
   {
     "input": "file://example.net/C:/",
     "base": "about:blank",
@@ -5837,7 +5779,6 @@
     "search": "",
     "hash": ""
   },
-  "# Windows drive letter quirk (no host)",
   {
     "input": "file:/C|/",
     "base": "about:blank",
@@ -5866,7 +5807,6 @@
     "search": "",
     "hash": ""
   },
-  "# file URLs without base URL by Rimas Misevičius",
   {
     "input": "file:",
     "base": "about:blank",
@@ -5909,7 +5849,6 @@
     "search": "",
     "hash": "#frag"
   },
-  "# file: drive letter cases from https://crbug.com/1078698",
   {
     "input": "file:///Y:",
     "base": "about:blank",
@@ -5971,7 +5910,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "# file: drive letter cases from https://crbug.com/1078698 but lowercased",
   {
     "input": "file:///y:",
     "base": "about:blank",
@@ -6033,7 +5971,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "# IPv6 tests",
   {
     "input": "http://[1:0::]",
     "base": "http://example.net/",
@@ -6089,7 +6026,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "# Empty host",
   {
     "input": "http://?",
     "base": "about:blank",
@@ -6100,25 +6036,21 @@
     "base": "about:blank",
     "failure": true
   },
-  "Port overflow (2^32 + 81)",
   {
     "input": "http://f:4294967377/c",
     "base": "http://example.org/",
     "failure": true
   },
-  "Port overflow (2^64 + 81)",
   {
     "input": "http://f:18446744073709551697/c",
     "base": "http://example.org/",
     "failure": true
   },
-  "Port overflow (2^128 + 81)",
   {
     "input": "http://f:340282366920938463463374607431768211537/c",
     "base": "http://example.org/",
     "failure": true
   },
-  "# Non-special-URL path tests",
   {
     "input": "sc://ñ",
     "base": "about:blank",
@@ -6444,7 +6376,6 @@
     "search": "",
     "hash": ""
   },
-  "# percent encoded hosts in non-special-URLs",
   {
     "input": "non-special://%E2%80%A0/",
     "base": "about:blank",
@@ -6473,7 +6404,6 @@
     "search": "",
     "hash": ""
   },
-  "# IPv6 in non-special-URLs",
   {
     "input": "non-special://[1:2:0:0:5:0:0:0]/",
     "base": "about:blank",
@@ -6549,7 +6479,6 @@
     "search": "",
     "hash": ""
   },
-  "Invalid IPv4 radix digits",
   {
     "input": "http://0177.0.0.0189",
     "base": "about:blank",
@@ -6592,13 +6521,11 @@
     "search": "",
     "hash": ""
   },
-  "Invalid IPv4 portion of IPv6 address",
   {
     "input": "http://[::127.0.0.0.1]",
     "base": "about:blank",
     "failure": true
   },
-  "Uncompressed IPv6 addresses with 0",
   {
     "input": "http://[0:1:0:1:0:1:0:1]",
     "base": "about:blank",
@@ -6627,7 +6554,6 @@
     "search": "",
     "hash": ""
   },
-  "Percent-encoded query and fragment",
   {
     "input": "http://example.org/test?\u0022",
     "base": "about:blank",
@@ -6754,7 +6680,6 @@
     "search": "?a",
     "hash": "#%GH"
   },
-  "URLs that require a non-about:blank base. (Also serve as invalid base tests.)",
   {
     "input": "a",
     "base": "about:blank",
@@ -6770,7 +6695,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "Bases that don't fail to parse but fail to be bases",
   {
     "input": "test-a-colon.html",
     "base": "a:",
@@ -6781,7 +6705,6 @@
     "base": "a:b",
     "failure": true
   },
-  "Other base URL tests, that must succeed",
   {
     "input": "test-a-colon-slash.html",
     "base": "a:/",
@@ -6838,7 +6761,6 @@
     "search": "",
     "hash": ""
   },
-  "Null code point in fragment",
   {
     "input": "http://example.org/test?a#b\u0000c",
     "base": "about:blank",
@@ -6881,7 +6803,6 @@
     "search": "?a",
     "hash": "#b%00c"
   },
-  "First scheme char - not allowed: https://github.com/whatwg/url/issues/464",
   {
     "input": "10.0.0.7:8080/foo.html",
     "base": "file:///some/dir/bar.html",
@@ -6896,7 +6817,6 @@
     "search": "",
     "hash": ""
   },
-  "Subsequent scheme chars - not allowed",
   {
     "input": "a!@$*=/foo.html",
     "base": "file:///some/dir/bar.html",
@@ -6911,7 +6831,6 @@
     "search": "",
     "hash": ""
   },
-  "First and subsequent scheme chars - allowed",
   {
     "input": "a1234567890-+.:foo/bar",
     "base": "http://example.com/dir/file",
@@ -6926,7 +6845,6 @@
     "search": "",
     "hash": ""
   },
-  "IDNA ignored code points in file URLs hosts",
   {
     "input": "file://a\u00ADb/p",
     "base": "about:blank",
@@ -6955,7 +6873,6 @@
     "search": "",
     "hash": ""
   },
-  "Empty host after the domain to ASCII",
   {
     "input": "file://\u00ad/p",
     "base": "about:blank",
@@ -6971,7 +6888,6 @@
     "base": "about:blank",
     "failure": true
   },
-  "https://bugzilla.mozilla.org/show_bug.cgi?id=1647058",
   {
     "input": "#link",
     "base": "https://example.org/##link",
