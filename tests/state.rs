@@ -3,7 +3,6 @@
 
 use percent_encoding::{utf8_percent_encode, CONTROLS};
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
 use std::fmt;
 use url_wasm::machine::URLStateMachine;
 
