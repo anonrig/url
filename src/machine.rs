@@ -70,7 +70,7 @@ impl URLStateMachine {
                 State::Authority => machine.authority_state(byte),
                 State::SchemeStart => machine.scheme_start_state(byte),
                 State::Scheme => machine.scheme_state(byte),
-                State::Host => None,
+                State::Host => machine.host_state(byte),
                 State::NoScheme => machine.no_scheme_state(byte),
                 State::Fragment => machine.fragment_state(byte),
                 State::Relative => machine.relative_state(byte),
@@ -239,6 +239,92 @@ impl URLStateMachine {
         // Otherwise, validation error, return failure.
         else {
             return Some(Code::Failure);
+        }
+
+        None
+    }
+
+    fn host_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If state override is given and url’s scheme is "file", then decrease pointer by 1 and set state to file host state.
+        if self.state_override && self.url.scheme == *"file" {
+            self.pointer -= 1;
+            self.state = State::FileHost;
+        }
+        // Otherwise, if c is U+003A (:) and insideBrackets is false, then:
+        else if code == Some(58) && !self.inside_brackets {
+            // If buffer is the empty string, validation error, return failure.
+            if self.buffer.len() == 0 {
+                return Some(Code::Failure);
+            }
+
+            // If state override is given and state override is hostname state, then return.
+            // TODO: Implement this by changing state_override type from bool to Option<State>
+
+            // Let host be the result of host parsing buffer with url is not special.
+            let host = parse_host(self.buffer.clone(), !self.is_special_url);
+
+            // If host is failure, then return failure.
+            if host.len() == 0 {
+                return Some(Code::Failure);
+            }
+
+            // Set url’s host to host, buffer to the empty string, and state to port state.
+            self.url.host = Some(host);
+            self.buffer = "".to_string();
+            self.state = State::Port;
+        }
+        // Otherwise, if one of the following is true:
+        // - c is the EOF code point, U+002F (/), U+003F (?), or U+0023 (#)
+        // - url is special and c is U+005C (\)
+        else if code.is_none()
+            || code == Some(47)
+            || code == Some(63)
+            || code == Some(35)
+            || (self.is_special_url && code == Some(92))
+        {
+            // then decrease pointer by 1, and then:
+            self.pointer -= 1;
+
+            // If url is special and buffer is the empty string, validation error, return failure.
+            if self.is_special_url && self.buffer.len() == 0 {
+                return Some(Code::Failure);
+            }
+            // Otherwise, if state override is given, buffer is the empty string, and either url includes credentials or url’s port is non-null, return.
+            else if self.state_override
+                && self.buffer.len() == 0
+                && (self.url.port.is_some()
+                    || !self.url.username.is_empty()
+                    || !self.url.password.is_empty())
+            {
+                return Some(Code::Exit);
+            }
+
+            let host = parse_host(self.buffer.clone(), !self.is_special_url);
+
+            if host.is_empty() {
+                return Some(Code::Failure);
+            }
+
+            // Set url’s host to host, buffer to the empty string, and state to path start state.
+            self.url.host = Some(host);
+            self.buffer = "".to_string();
+            self.state = State::PathStart;
+
+            // If state override is given, then return.
+            if self.state_override {
+                return Some(Code::Exit);
+            }
+        } else {
+            // If c is U+005B ([), then set insideBrackets to true.
+            if code == Some(91) {
+                self.inside_brackets = true;
+            }
+            // If c is U+005D (]), then set insideBrackets to false.
+            else if code == Some(93) {
+                self.inside_brackets = false;
+            }
+
+            self.buffer += (code.unwrap() as char).to_string().as_str();
         }
 
         None
