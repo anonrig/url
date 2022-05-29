@@ -60,35 +60,37 @@ impl URLStateMachine {
             .trim_matches(|c: char| c.is_ascii_control() && c.is_ascii_whitespace())
             .replace(|c: char| c.is_ascii_whitespace(), "");
 
-        // TODO: Traverse one more time after loop finishes
-        for byte in trimmed_input.bytes() {
+        let mut bytes: Vec<Option<u8>> = trimmed_input.bytes().map(|c| Some(c)).collect();
+
+        // Traverse one more time for EOL character.
+        bytes.push(None);
+
+        for byte in bytes {
             let result = match machine.state {
-                State::Authority => machine.authority_state(Some(byte)),
-                State::SchemeStart => machine.scheme_start_state(Some(byte)),
+                State::Authority => machine.authority_state(byte),
+                State::SchemeStart => machine.scheme_start_state(byte),
                 State::Scheme => None,
                 State::Host => None,
-                State::NoScheme => machine.no_scheme_state(Some(byte)),
-                State::Fragment => machine.fragment_state(Some(byte)),
-                State::Relative => machine.relative_state(Some(byte)),
-                State::RelativeSlash => machine.relative_slash_state(Some(byte)),
-                State::File => machine.file_state(Some(byte)),
-                State::FileHost => machine.file_host_state(Some(byte)),
-                State::FileSlash => machine.file_slash_state(Some(byte)),
-                State::PathOrAuthority => machine.path_or_authority_state(Some(byte)),
+                State::NoScheme => machine.no_scheme_state(byte),
+                State::Fragment => machine.fragment_state(byte),
+                State::Relative => machine.relative_state(byte),
+                State::RelativeSlash => machine.relative_slash_state(byte),
+                State::File => machine.file_state(byte),
+                State::FileHost => machine.file_host_state(byte),
+                State::FileSlash => machine.file_slash_state(byte),
+                State::PathOrAuthority => machine.path_or_authority_state(byte),
                 State::SpecialAuthorityIgnoreSlashes => {
-                    machine.special_authority_ignore_slashes_state(Some(byte))
+                    machine.special_authority_ignore_slashes_state(byte)
                 }
-                State::SpecialAuthoritySlashes => {
-                    machine.special_authority_slashes_state(Some(byte))
-                }
+                State::SpecialAuthoritySlashes => machine.special_authority_slashes_state(byte),
                 State::SpecialRelativeOrAuthority => {
-                    machine.special_relative_or_authority_state(Some(byte))
+                    machine.special_relative_or_authority_state(byte)
                 }
-                State::Query => machine.query_state(Some(byte)),
-                State::Path => machine.path_state(Some(byte)),
-                State::PathStart => machine.path_start_state(Some(byte)),
-                State::OpaquePath => machine.opaque_path_state(Some(byte)),
-                State::Port => machine.port_state(Some(byte)),
+                State::Query => machine.query_state(byte),
+                State::Path => machine.path_state(byte),
+                State::PathStart => machine.path_start_state(byte),
+                State::OpaquePath => machine.opaque_path_state(byte),
+                State::Port => machine.port_state(byte),
             };
 
             match result {
