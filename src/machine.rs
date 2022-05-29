@@ -2,6 +2,7 @@ use crate::encode_sets::{
     FRAGMENT_PERCENT_ENCODE_SET, PATH_PERCENT_ENCODE_SET, QUERY_PERCENT_ENCODE_SET,
     SPECIAL_QUERY_PERCENT_ENCODE_SET, USER_INFO_PERCENT_ENCODE_SET,
 };
+use crate::parser::parse_host;
 use crate::platform::{
     is_normalized_windows_drive_letter, is_windows_drive_letter, starts_with_windows_drive_letter,
 };
@@ -71,7 +72,7 @@ impl URLStateMachine {
                 State::Relative => machine.relative_state(Some(byte)),
                 State::RelativeSlash => machine.relative_slash_state(Some(byte)),
                 State::File => None,
-                State::FileHost => None,
+                State::FileHost => machine.file_host_state(Some(byte)),
                 State::FileSlash => machine.file_slash_state(Some(byte)),
                 State::PathOrAuthority => machine.path_or_authority_state(Some(byte)),
                 State::SpecialAuthorityIgnoreSlashes => {
@@ -639,6 +640,68 @@ impl URLStateMachine {
             // Set state to path state, and decrease pointer by 1.
             self.state = State::Path;
             self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn file_host_state(&mut self, code: Option<u8>) -> Option<Code> {
+        if let Some(wrapped_code) = code {
+            self.buffer += (wrapped_code as char).to_string().as_str()
+        }
+        // If c is the EOF code point, U+002F (/), U+005C (\), U+003F (?), or U+0023 (#), then decrease pointer by 1 and then:
+        else if code.is_none()
+            || code == Some(47)
+            || code == Some(92)
+            || code == Some(63)
+            || code == Some(35)
+        {
+            self.pointer -= 1;
+
+            // If state override is not given and buffer is a Windows drive letter, validation error, set state to path state.
+            if !self.state_override && is_windows_drive_letter(self.buffer.as_str()) {
+                self.state = State::Path;
+            }
+            // Otherwise, if buffer is the empty string, then:
+            else if self.buffer.is_empty() {
+                // Set url’s host to the empty string.
+                self.url.host = Some("".to_string());
+
+                // If state override is given, then return.
+                if self.state_override {
+                    return Some(Code::Exit);
+                }
+
+                // Set state to path start state.
+                self.state = State::PathStart;
+            }
+            // Otherwise, run these steps:
+            else {
+                // Let host be the result of host parsing buffer with url is not special.
+                let mut host = parse_host(self.buffer.clone(), !self.is_special_url);
+
+                // If host is failure, then return failure.
+                if host.is_empty() {
+                    return Some(Code::Failure);
+                }
+
+                // If host is "localhost", then set host to the empty string.
+                if host == *"localhost" {
+                    host = "".to_string();
+                }
+
+                // Set url’s host to host.
+                self.url.host = Some(host);
+
+                // If state override is given, then return.
+                if self.state_override {
+                    return Some(Code::Exit);
+                }
+
+                // Set buffer to the empty string and state to path start state.
+                self.buffer = "".to_string();
+                self.state = State::PathStart;
+            }
         }
 
         None
