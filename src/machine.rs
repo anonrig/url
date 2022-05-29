@@ -71,7 +71,7 @@ impl URLStateMachine {
                 State::Fragment => machine.fragment_state(Some(byte)),
                 State::Relative => machine.relative_state(Some(byte)),
                 State::RelativeSlash => machine.relative_slash_state(Some(byte)),
-                State::File => None,
+                State::File => machine.file_state(Some(byte)),
                 State::FileHost => machine.file_host_state(Some(byte)),
                 State::FileSlash => machine.file_slash_state(Some(byte)),
                 State::PathOrAuthority => machine.path_or_authority_state(Some(byte)),
@@ -638,6 +638,67 @@ impl URLStateMachine {
             }
 
             // Set state to path state, and decrease pointer by 1.
+            self.state = State::Path;
+            self.pointer -= 1;
+        }
+
+        None
+    }
+
+    fn file_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // Set url's scheme to "file".
+        self.url.scheme = "file".to_string();
+        self.is_special_url = true;
+
+        // Set url’s host to the empty string.
+        self.url.host = Some("".to_string());
+
+        // If c is U+002F (/) or U+005C (\), then:
+        if code == Some(47) || code == Some(92) {
+            // Set state to file slash state.
+            self.state = State::FileSlash;
+        }
+        // Otherwise, if base is non-null and base’s scheme is "file":
+        else if self.base.is_some() && self.base.as_ref().unwrap().scheme == *"file" {
+            let base = self.base.as_ref().unwrap();
+
+            // Set url’s host to base’s host, url’s path to a clone of base’s path, and url’s query to base’s query.
+            self.url.host = base.host.clone();
+            self.url.path = base.path.clone();
+            self.url.query = base.query.clone();
+
+            // If c is U+003F (?), then set url’s query to the empty string and state to query state.
+            if code == Some(63) {
+                self.url.query = Some("".to_string());
+                self.state = State::Query;
+            }
+            // Otherwise, if c is U+0023 (#), set url’s fragment to the empty string and state to fragment state.
+            else if code == Some(35) {
+                self.url.fragment = Some("".to_string());
+                self.state = State::Fragment;
+            }
+            // Otherwise, if c is not the EOF code point:
+            else if code.is_some() {
+                // Set url’s query to null.
+                self.url.query = None;
+
+                // If the code point substring from pointer to the end of input does not start with a Windows drive letter, then shorten url’s path.
+                if !starts_with_windows_drive_letter(self.input.as_str(), self.pointer) {
+                    self.shorten_url();
+                }
+                // Otherwise:
+                else {
+                    // Set url's path to an empty list.
+                    self.url.path = vec![];
+                }
+
+                // Set state to path state and decrease pointer by 1.
+                self.state = State::Path;
+                self.pointer -= 1;
+            }
+        }
+        // Otherwise, set state to path state, and decrease pointer by 1.
+        else {
             self.state = State::Path;
             self.pointer -= 1;
         }
