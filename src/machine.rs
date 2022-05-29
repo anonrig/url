@@ -20,7 +20,7 @@ pub struct URLStateMachine {
     at_sign_seen: bool,
     inside_brackets: bool,
     password_token_seen: bool,
-    pointer: usize,
+    pointer: i32,
     pub failure: bool,
     state_override: bool,
     encoding_override: String,
@@ -69,7 +69,7 @@ impl URLStateMachine {
             let result = match machine.state {
                 State::Authority => machine.authority_state(byte),
                 State::SchemeStart => machine.scheme_start_state(byte),
-                State::Scheme => None,
+                State::Scheme => machine.scheme_state(byte),
                 State::Host => None,
                 State::NoScheme => machine.no_scheme_state(byte),
                 State::Fragment => machine.fragment_state(byte),
@@ -135,6 +135,106 @@ impl URLStateMachine {
         else if !self.state_override {
             self.state = State::NoScheme;
             self.pointer -= 1;
+        }
+        // Otherwise, validation error, return failure.
+        else {
+            return Some(Code::Failure);
+        }
+
+        None
+    }
+
+    fn scheme_state(&mut self, code: Option<u8>) -> Option<Code> {
+        // If c is an ASCII alphanumeric, U+002B (+), U+002D (-), or U+002E (.), append c, lowercased, to buffer.
+        if code.is_some()
+            && (code.unwrap().is_ascii_alphanumeric()
+                || code == Some(43)
+                || code == Some(45)
+                || code == Some(46))
+        {
+            self.buffer += (code.unwrap() as char).to_lowercase().to_string().as_str();
+        }
+        // Otherwise, if c is U+003A (:), then:
+        else if code == Some(58) {
+            let is_buffer_special = SPECIAL_SCHEMES.contains_key(self.buffer.as_str());
+
+            // If state override is given, then:
+            if self.state_override {
+                // If url’s scheme is a special scheme and buffer is not a special scheme, then return.
+                // If url’s scheme is not a special scheme and buffer is a special scheme, then return.
+                // If url includes credentials or has a non-null port, and buffer is 'file', then return.
+                // If url’s scheme is 'file' and its host is an empty host, then return.
+                if (self.is_special_url && !is_buffer_special)
+                    || (!self.is_special_url && is_buffer_special)
+                    || ((self.url.username.len() > 0
+                        || self.url.password.len() > 0
+                        || self.url.port.is_some())
+                        && self.buffer == *"file")
+                    || (self.url.scheme == *"file"
+                        && self.url.host.is_some()
+                        && self.url.host.as_ref().unwrap().len() == 0)
+                {
+                    return Some(Code::Exit);
+                }
+            }
+
+            // Set url’s scheme to buffer.
+            self.is_special_url = is_buffer_special;
+            self.url.scheme = self.buffer.clone();
+
+            // If state override is given, then:
+            if self.state_override {
+                let port = SPECIAL_SCHEMES
+                    .get(self.url.scheme.as_str())
+                    .unwrap()
+                    .as_ref();
+
+                // If url’s port is url’s scheme’s default port, then set url’s port to null.
+                if let Some(port) = port {
+                    if self.url.port == Some(*port) {
+                        self.url.port = None;
+                        return Some(Code::Exit);
+                    }
+                }
+            }
+
+            // Set buffer to the empty string.
+            self.buffer = "".to_string();
+
+            // If url’s scheme is "file", then:
+            if self.url.scheme == *"file" {
+                // Set state to file state.
+                self.state = State::File;
+            }
+            // Otherwise, if url is special, base is non-null, and base’s scheme is url’s scheme:
+            else if self.is_special_url
+                && self.base.is_some()
+                && self.base.as_ref().unwrap().scheme == self.url.scheme
+            {
+                // Set state to special relative or authority state.
+                self.state = State::SpecialRelativeOrAuthority;
+            }
+            // Otherwise, if url is special, set state to special authority slashes state.
+            else if self.is_special_url {
+                self.state = State::SpecialAuthoritySlashes;
+            }
+            // Otherwise, if remaining starts with an U+002F (/), set state to path or authority state and increase pointer by 1.
+            else if self.input.chars().nth(self.pointer as usize + 1) == Some('/') {
+                self.state = State::PathOrAuthority;
+                self.pointer += 1;
+            }
+            // Otherwise, set url’s path to the empty string and set state to opaque path state.
+            else {
+                self.url.path = vec![];
+                self.state = State::OpaquePath;
+            }
+        }
+        // Otherwise, if state override is not given, set buffer to the empty string, state to no scheme state,
+        // and start over (from the first code point in input).
+        else if !self.state_override {
+            self.buffer = "".to_string();
+            self.state = State::NoScheme;
+            self.pointer = -1;
         }
         // Otherwise, validation error, return failure.
         else {
@@ -229,7 +329,7 @@ impl URLStateMachine {
             }
 
             // Decrease pointer by the number of code points in buffer plus one, set buffer to the empty string, and set state to host state.
-            self.pointer -= self.buffer.len() + 1;
+            self.pointer -= (self.buffer.len() + 1) as i32;
             self.buffer = "".to_string();
             self.state = State::Host;
         }
@@ -245,7 +345,7 @@ impl URLStateMachine {
     fn fragment_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is not the EOF code point, then:
         if let Some(_code) = code {
-            let fragment = &self.input[self.pointer..self.input.len()];
+            let fragment = &self.input[self.pointer as usize..self.input.len()];
             self.url.fragment =
                 Some(utf8_percent_encode(fragment, FRAGMENT_PERCENT_ENCODE_SET).to_string());
         }
@@ -267,7 +367,7 @@ impl URLStateMachine {
         self.state = State::SpecialAuthorityIgnoreSlashes;
 
         // If c is U+002F (/) and remaining starts with U+002F (/),
-        if code == Some(47) && self.input.chars().nth(self.pointer + 1) == Some('/') {
+        if code == Some(47) && self.input.chars().nth(self.pointer as usize + 1) == Some('/') {
             // then set state to special authority ignore slashes state and increase pointer by 1.
             self.pointer += 1;
         } else {
@@ -281,7 +381,7 @@ impl URLStateMachine {
     fn special_relative_or_authority_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is U+002F (/) and remaining starts with U+002F (/),
         // then set state to special authority ignore slashes state and increase pointer by 1.
-        if code == Some(47) && self.input.chars().nth(self.pointer + 1) == Some('/') {
+        if code == Some(47) && self.input.chars().nth(self.pointer as usize + 1) == Some('/') {
             self.state = State::SpecialAuthorityIgnoreSlashes;
             self.pointer += 1;
         }
@@ -685,7 +785,7 @@ impl URLStateMachine {
                 self.url.query = None;
 
                 // If the code point substring from pointer to the end of input does not start with a Windows drive letter, then shorten url’s path.
-                if !starts_with_windows_drive_letter(self.input.as_str(), self.pointer) {
+                if !starts_with_windows_drive_letter(self.input.as_str(), self.pointer as usize) {
                     self.shorten_url();
                 }
                 // Otherwise:
