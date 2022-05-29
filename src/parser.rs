@@ -7,7 +7,7 @@ fn parse_ipv4_number(buffer: String) -> Option<u32> {
     let mut buffer = buffer;
 
     // If input is the empty string, then return failure.
-    if buffer.len() == 0 {
+    if buffer.is_empty() {
         return None;
     }
 
@@ -40,8 +40,8 @@ fn parse_ipv4_number(buffer: String) -> Option<u32> {
     let radix = u32::from_str_radix(buffer.as_str(), r);
 
     // Let output be the mathematical integer value that is represented by input in radix-R notation, using ASCII hex digits for digits with values 0 through 15.
-    if radix.is_ok() {
-        return Some(radix.unwrap());
+    if let Ok(value) = radix {
+        return Some(value);
     }
 
     None
@@ -387,7 +387,7 @@ pub fn parse_host(buffer: String, is_not_url_special: bool) -> String {
         return parse_opaque_host(buffer);
     }
 
-    let ascii_domain = domain_to_ascii(buffer.as_str()).unwrap();
+    let mut ascii_domain = domain_to_ascii(buffer.as_str()).unwrap_or("".to_string());
 
     // If asciiDomain is failure, validation error, return failure.
     if ascii_domain.is_empty() {

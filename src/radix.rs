@@ -5,7 +5,7 @@ pub struct Radix {
 
 impl Radix {
     pub fn new(x: i32, radix: u32) -> Result<Self, &'static str> {
-        if radix < 2 || radix > 36 {
+        if !(2..=36).contains(&radix) {
             Err("Unsupported radix")
         } else {
             Ok(Self { x, radix })

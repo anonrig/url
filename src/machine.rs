@@ -65,7 +65,9 @@ impl URLStateMachine {
         // Traverse one more time for EOL character.
         bytes.push(None);
 
-        for byte in bytes {
+        while machine.pointer < bytes.len() as i32 {
+            let byte = bytes[machine.pointer as usize];
+
             let result = match machine.state {
                 State::Authority => machine.authority_state(byte),
                 State::SchemeStart => machine.scheme_start_state(byte),
@@ -103,6 +105,8 @@ impl URLStateMachine {
                     break;
                 }
             }
+
+            machine.pointer += 1;
         }
 
         machine
@@ -127,8 +131,7 @@ impl URLStateMachine {
     fn scheme_start_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is an ASCII alpha, append c, lowercased, to buffer, and set state to scheme state.
         if is_ascii_alphanumeric(code) {
-            self.buffer
-                .push_str((code.unwrap() as char).to_lowercase().to_string().as_str());
+            self.buffer += (code.unwrap() as char).to_lowercase().to_string().as_str();
             self.state = State::Scheme;
         }
         // Otherwise, if state override is not given, set state to no scheme state and decrease pointer by 1.
@@ -314,17 +317,17 @@ impl URLStateMachine {
             if self.state_override {
                 return Some(Code::Exit);
             }
-        } else {
+        } else if let Some(code) = code {
             // If c is U+005B ([), then set insideBrackets to true.
-            if code == Some(91) {
+            if code == 91 {
                 self.inside_brackets = true;
             }
             // If c is U+005D (]), then set insideBrackets to false.
-            else if code == Some(93) {
+            else if code == 93 {
                 self.inside_brackets = false;
             }
 
-            self.buffer += (code.unwrap() as char).to_string().as_str();
+            self.buffer += (code as char).to_string().as_str();
         }
 
         None
@@ -382,12 +385,11 @@ impl URLStateMachine {
                 }
 
                 // Let encodedCodePoints be the result of running UTF-8 percent-encode codePoint using the userinfo percent-encode set.
-                let input = [code.unwrap()];
-                let encoded_code_points = utf8_percent_encode(
-                    from_utf8(input.borrow()).unwrap(),
-                    USER_INFO_PERCENT_ENCODE_SET,
-                )
-                .to_string();
+                let input = self.input.chars().nth(self.pointer as usize).unwrap();
+
+                let encoded_code_points =
+                    utf8_percent_encode(input.to_string().as_str(), USER_INFO_PERCENT_ENCODE_SET)
+                        .to_string();
 
                 // If passwordTokenSeen is true, then append encodedCodePoints to url’s password.
                 if self.password_token_seen {
@@ -420,9 +422,8 @@ impl URLStateMachine {
             self.state = State::Host;
         }
         // Otherwise, append c to buffer.
-        else {
-            self.buffer
-                .push_str(from_utf8(vec![code.unwrap()].borrow()).unwrap());
+        else if let Some(c) = self.input.chars().nth(self.pointer as usize) {
+            self.buffer += c.to_string().as_str();
         }
 
         None
@@ -507,12 +508,10 @@ impl URLStateMachine {
             }
             _ => {
                 // If c is not the EOF code point, UTF-8 percent-encode c using the C0 control percent-encode set and append the result to url’s path.
-                if let Some(unwrapped_code) = code {
-                    let input = [unwrapped_code];
-                    self.url.path.push(
-                        utf8_percent_encode(from_utf8(input.borrow()).unwrap(), CONTROLS)
-                            .to_string(),
-                    );
+                if let Some(c) = self.input.chars().nth(self.pointer as usize) {
+                    self.url
+                        .path
+                        .push(utf8_percent_encode(c.to_string().as_str(), CONTROLS).to_string());
                 }
             }
         }
@@ -647,21 +646,23 @@ impl URLStateMachine {
             // If buffer is not the empty string, then:
             if !self.buffer.is_empty() {
                 // Let port be the mathematical integer value that is represented by buffer in radix-10 using ASCII digits for digits with values 0 through 9.
-                let port = self.buffer.parse::<u32>().unwrap();
+                let port = u32::from_str_radix(self.buffer.as_str(), 10).unwrap();
 
                 // If port is greater than 2^16 − 1, validation error, return failure.
-                if port > (2_i32.pow(16) - 1).try_into().unwrap() {
+                if port > (2_u32.pow(16) - 1) {
                     return Some(Code::Failure);
                 }
 
                 // Set url’s port to null, if port is url’s scheme’s default port; otherwise to port.
-                let default_port = SPECIAL_SCHEMES.get(self.url.scheme.as_str()).unwrap();
-
-                self.url.port = if default_port == Some(port).borrow() {
-                    None
+                if let Some(default_port) = SPECIAL_SCHEMES.get(self.url.scheme.as_str()) {
+                    self.url.port = if default_port == Some(port).borrow() {
+                        None
+                    } else {
+                        Some(port)
+                    }
                 } else {
-                    Some(port)
-                };
+                    self.url.port = Some(port);
+                }
 
                 // Set buffer to the empty string.
                 self.buffer = "".to_string();
@@ -723,11 +724,9 @@ impl URLStateMachine {
                 self.state = State::Fragment;
             }
         }
-        // Otherwise, if c is not the EOF code point
-        else if let Some(unwrapped_code) = code {
-            // Append c to buffer
-            let input = [unwrapped_code];
-            self.buffer += from_utf8(input.borrow()).unwrap();
+        // Otherwise, if c is not the EOF code point: Append c to buffer
+        else if let Some(c) = self.input.chars().nth(self.pointer as usize) {
+            self.buffer += c.to_string().as_str()
         }
 
         None
@@ -790,12 +789,10 @@ impl URLStateMachine {
             }
         }
         // Otherwise run these steps:
-        else if let Some(unwrapped_code) = code {
-            let input = [unwrapped_code];
-            self.buffer +=
-                utf8_percent_encode(from_utf8(input.borrow()).unwrap(), PATH_PERCENT_ENCODE_SET)
-                    .to_string()
-                    .as_str();
+        else if let Some(c) = self.input.chars().nth(self.pointer as usize) {
+            self.buffer += utf8_percent_encode(c.to_string().as_str(), PATH_PERCENT_ENCODE_SET)
+                .to_string()
+                .as_str();
         }
 
         None
@@ -809,19 +806,19 @@ impl URLStateMachine {
         // Otherwise:
         else {
             // If base is non-null and base’s scheme is "file", then:
-            if self.base.is_some() && self.base.as_ref().unwrap().scheme == *"file" {
-                let base = self.base.as_ref().unwrap();
+            if let Some(base) = self.base.as_ref() {
+                if base.scheme == *"file" {
+                    // Set url’s host to base’s host.
+                    self.url.host = base.host.clone();
 
-                // Set url’s host to base’s host.
-                self.url.host = base.host.clone();
-
-                // If the code point substring from pointer to the end of input does not start with a Windows drive
-                // letter and base’s path[0] is a normalized Windows drive letter, then append base’s path[0] to url’s path.
-                if !starts_with_windows_drive_letter(self.input.as_str(), self.pointer as usize)
-                    && !base.path.is_empty()
-                    && is_normalized_windows_drive_letter(base.path.first().unwrap())
-                {
-                    self.url.path.push(base.path.first().unwrap().to_string())
+                    // If the code point substring from pointer to the end of input does not start with a Windows drive
+                    // letter and base’s path[0] is a normalized Windows drive letter, then append base’s path[0] to url’s path.
+                    if !starts_with_windows_drive_letter(self.input.as_str(), self.pointer as usize)
+                        && !base.path.is_empty()
+                        && is_normalized_windows_drive_letter(base.path.first().unwrap())
+                    {
+                        self.url.path.push(base.path.first().unwrap().to_string())
+                    }
                 }
             }
 

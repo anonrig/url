@@ -15,7 +15,7 @@ pub fn serialize_ipv4(address: u32) -> String {
         n = (n / 256.0).floor();
     }
 
-    output.to_string()
+    output
 }
 
 pub fn serialize_ipv6(address: Vec<u32>) -> String {
@@ -55,7 +55,7 @@ fn find_longest_zero_sequence(address: &Vec<u32>) -> usize {
     let mut current_start: Option<usize> = None;
     let mut current_length = 0;
 
-    for (index, character) in address.into_iter().enumerate() {
+    for (index, character) in address.iter().enumerate() {
         if character != &0 {
             if current_length > max_length {
                 if let Some(start) = current_start {
