@@ -4,7 +4,7 @@ pub struct URL {
     pub username: String,
     pub password: String,
     pub host: Option<String>,
-    pub port: Option<u32>,
+    pub port: Option<String>,
     pub path: Vec<String>,
     pub query: Option<String>,
     pub fragment: Option<String>,

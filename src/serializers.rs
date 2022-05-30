@@ -1,11 +1,10 @@
-use crate::radix::Radix;
 use std::borrow::Borrow;
 
-pub fn serialize_ipv4(address: u32) -> String {
+pub fn serialize_ipv4(address: u64) -> String {
     let mut output: String = String::from("");
-    let mut n: f32 = address as f32;
+    let mut n = address as f64;
 
-    for i in 1..4 {
+    for i in 1..=4 {
         output = (n % 256.0).to_string() + output.borrow();
 
         if i != 4 {
@@ -23,7 +22,7 @@ pub fn serialize_ipv6(address: Vec<u32>) -> String {
     let compress = find_longest_zero_sequence(&address);
     let mut ignore_0 = false;
 
-    for piece_index in 0..7 {
+    for piece_index in 0..8 {
         if ignore_0 && address[piece_index] == 0 {
             continue;
         } else if ignore_0 {
@@ -36,8 +35,10 @@ pub fn serialize_ipv6(address: Vec<u32>) -> String {
             continue;
         }
 
-        output += Radix::new(address[piece_index] as i32, 16)
+        output += char::from_u32(address[piece_index])
             .unwrap()
+            .to_digit(16)
+            .unwrap_or(0)
             .to_string()
             .as_str();
 
@@ -50,7 +51,7 @@ pub fn serialize_ipv6(address: Vec<u32>) -> String {
 }
 
 fn find_longest_zero_sequence(address: &Vec<u32>) -> usize {
-    let mut max_idx = 0;
+    let mut max_idx: Option<usize> = None;
     let mut max_length = 1;
     let mut current_start: Option<usize> = None;
     let mut current_length = 0;
@@ -58,9 +59,7 @@ fn find_longest_zero_sequence(address: &Vec<u32>) -> usize {
     for (index, character) in address.iter().enumerate() {
         if character != &0 {
             if current_length > max_length {
-                if let Some(start) = current_start {
-                    max_idx = start;
-                }
+                max_idx = current_start;
                 max_length = current_length;
             }
 
@@ -74,9 +73,10 @@ fn find_longest_zero_sequence(address: &Vec<u32>) -> usize {
             current_length += 1;
         }
     }
+
     if current_length > max_length {
         return current_start.unwrap_or(0);
     }
 
-    max_idx
+    max_idx.unwrap_or(0)
 }

@@ -13,7 +13,6 @@ use crate::string::{
 use crate::url::URL;
 use percent_encoding::{utf8_percent_encode, CONTROLS};
 use std::borrow::Borrow;
-use std::str::from_utf8;
 
 pub struct URLStateMachine {
     buffer: String,
@@ -194,7 +193,7 @@ impl URLStateMachine {
 
                 // If url’s port is url’s scheme’s default port, then set url’s port to null.
                 if let Some(port) = port {
-                    if self.url.port == Some(*port) {
+                    if self.url.port == Some(port.to_string()) {
                         self.url.port = None;
                         return Some(Code::Exit);
                     }
@@ -267,7 +266,7 @@ impl URLStateMachine {
             let host = parse_host(self.buffer.clone(), !self.is_special_url);
 
             // If host is failure, then return failure.
-            if host.len() == 0 {
+            if host.is_empty() {
                 return Some(Code::Failure);
             }
 
@@ -538,7 +537,7 @@ impl URLStateMachine {
             self.url.username = base.username.clone();
             self.url.password = base.password.clone();
             self.url.host = base.host.clone();
-            self.url.port = base.port;
+            self.url.port = base.port.clone();
             self.url.path = base.path.clone();
             self.url.query = base.query.clone();
 
@@ -581,7 +580,7 @@ impl URLStateMachine {
             self.url.username = base.username.clone();
             self.url.password = base.password.clone();
             self.url.host = base.host.clone();
-            self.url.port = base.port;
+            self.url.port = base.port.clone();
             self.state = State::Path;
             self.pointer -= 1;
         }
@@ -646,22 +645,24 @@ impl URLStateMachine {
             // If buffer is not the empty string, then:
             if !self.buffer.is_empty() {
                 // Let port be the mathematical integer value that is represented by buffer in radix-10 using ASCII digits for digits with values 0 through 9.
-                let port = u32::from_str_radix(self.buffer.as_str(), 10).unwrap();
+                let port_value = u16::from_str_radix(self.buffer.as_str(), 10);
 
                 // If port is greater than 2^16 − 1, validation error, return failure.
-                if port > (2_u32.pow(16) - 1) {
+                if port_value.is_err() {
                     return Some(Code::Failure);
                 }
 
+                let port = port_value.unwrap();
+
                 // Set url’s port to null, if port is url’s scheme’s default port; otherwise to port.
                 if let Some(default_port) = SPECIAL_SCHEMES.get(self.url.scheme.as_str()) {
-                    self.url.port = if default_port == Some(port).borrow() {
+                    self.url.port = if default_port.as_ref() == Some(&port.to_string()) {
                         None
                     } else {
-                        Some(port)
+                        Some(port.to_string())
                     }
                 } else {
-                    self.url.port = Some(port);
+                    self.url.port = Some(port.to_string());
                 }
 
                 // Set buffer to the empty string.

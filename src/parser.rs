@@ -47,7 +47,7 @@ fn parse_ipv4_number(buffer: String) -> Option<u32> {
     None
 }
 
-pub fn parse_ipv4(buffer: String) -> Option<u32> {
+pub fn parse_ipv4(buffer: String) -> Option<u64> {
     // Let parts be the result of strictly splitting input on U+002E (.).
     let mut parts: Vec<&str> = buffer.split('.').collect();
 
@@ -65,7 +65,7 @@ pub fn parse_ipv4(buffer: String) -> Option<u32> {
     }
 
     // Let numbers be an empty list.
-    let mut numbers: Vec<u32> = vec![];
+    let mut numbers: Vec<u64> = vec![];
 
     // For each part of parts:
     for part in &parts {
@@ -79,7 +79,7 @@ pub fn parse_ipv4(buffer: String) -> Option<u32> {
             }
 
             // Append result[0] to numbers.
-            numbers.push(number)
+            numbers.push(number as u64)
         } else {
             // If result is failure, validation error, return failure.
             return None;
@@ -87,18 +87,18 @@ pub fn parse_ipv4(buffer: String) -> Option<u32> {
     }
 
     // If the last item in numbers is greater than or equal to 256(5 − numbers’s size), validation error, return failure.
-    if numbers.last() > Some(&256_u32.pow(5 - numbers.len() as u32)) {
+    if numbers.last() > Some(&256_u64.pow(5 - numbers.len() as u32)) {
         return None;
     }
 
     // Let ipv4 be the last item in numbers.
     // Remove the last item from numbers.
-    let mut ipv4 = numbers.pop().unwrap();
+    let mut ipv4: u64 = numbers.pop().unwrap() as u64;
 
     // For each n of numbers:
     for (c, n) in numbers.iter().enumerate() {
         // Increment ipv4 by n × 256(3 − counter).
-        ipv4 += n * 256_u32.pow(3 - c as u32);
+        ipv4 += (n.clone() as u64) * 256_u64.pow(3 - c as u32);
     }
 
     Some(ipv4)
@@ -106,7 +106,7 @@ pub fn parse_ipv4(buffer: String) -> Option<u32> {
 
 pub fn parse_ipv6(buffer: String) -> Option<String> {
     // Let address be a new IPv6 address whose IPv6 pieces are all 0.
-    let mut address: Vec<u32> = vec![0, 8];
+    let mut address: Vec<u32> = vec![0; 8];
 
     // Let pieceIndex be 0.
     let mut piece_index: usize = 0;
@@ -120,7 +120,7 @@ pub fn parse_ipv6(buffer: String) -> Option<String> {
     // If c is U+003A (:), then:
     if buffer.chars().nth(pointer) == Some(':') {
         // If remaining does not start with U+003A (:), validation error, return failure.
-        if buffer.starts_with("::") {
+        if buffer.chars().nth(pointer + 1) != Some(':') {
             return None;
         }
 
@@ -158,7 +158,10 @@ pub fn parse_ipv6(buffer: String) -> Option<String> {
         let mut length = 0;
 
         // While length is less than 4 and c is an ASCII hex digit, set value to value × 0x10 + c interpreted as hexadecimal number, and increase pointer and length by 1.
-        while length < 4 && buffer.chars().nth(pointer).unwrap().is_ascii_hexdigit() {
+        while length < 4
+            && pointer < buffer.len()
+            && buffer.chars().nth(pointer).unwrap().is_ascii_hexdigit()
+        {
             value = (value * 0x10)
                 + u32::from_str_radix(
                     buffer.chars().nth(pointer).unwrap().to_string().as_str(),
@@ -205,7 +208,11 @@ pub fn parse_ipv6(buffer: String) -> Option<String> {
                 }
 
                 // If c is not an ASCII digit, validation error, return failure.
-                if buffer.chars().nth(pointer).unwrap().is_ascii_digit() {
+                if let Some(c) = buffer.chars().nth(pointer) {
+                    if !c.is_ascii_digit() {
+                        return None;
+                    }
+                } else {
                     return None;
                 }
 
@@ -271,7 +278,7 @@ pub fn parse_ipv6(buffer: String) -> Option<String> {
             }
         }
         // Otherwise, if c is not the EOF code point, validation error, return failure.
-        else if pointer < buffer.len() {
+        else if buffer.chars().nth(pointer).is_some() {
             return None;
         }
 
@@ -341,7 +348,7 @@ pub fn ends_with_a_number(domain: &str) -> bool {
     let mut parts: Vec<&str> = domain.split(".").collect();
 
     // If the last item in parts is the empty string, then:
-    if parts.last() == Some(&"") {
+    if parts.last().unwrap_or(&"").is_empty() {
         // If parts’s size is 1, then return false.
         if parts.len() == 1 {
             return false;
@@ -374,7 +381,7 @@ pub fn parse_host(buffer: String, is_not_url_special: bool) -> String {
     // If input starts with U+005B ([), then:
     if buffer.starts_with("[") {
         // If input does not end with U+005D (]), validation error, return failure.
-        if buffer.ends_with("]") {
+        if !buffer.ends_with("]") {
             return "".to_string();
         }
 
@@ -387,7 +394,7 @@ pub fn parse_host(buffer: String, is_not_url_special: bool) -> String {
         return parse_opaque_host(buffer);
     }
 
-    let mut ascii_domain = domain_to_ascii(buffer.as_str()).unwrap_or("".to_string());
+    let ascii_domain = domain_to_ascii(buffer.as_str()).unwrap_or("".to_string());
 
     // If asciiDomain is failure, validation error, return failure.
     if ascii_domain.is_empty() {
