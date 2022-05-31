@@ -37,6 +37,13 @@ impl URLStateMachine {
         encoding_override: Option<String>,
         state_override: Option<State>,
     ) -> URLStateMachine {
+        // If input contains any leading or trailing C0 control or space, validation error.
+        // If input contains any ASCII tab or newline, validation error.
+        let trimmed_input = input
+            .trim_matches(|c| c <= ' ')
+            .replace(|c| c == '\t' || c == '\n' || c == '\r', "")
+            .to_string();
+
         let mut machine = URLStateMachine {
             buffer: "".to_string(),
             at_sign_seen: false,
@@ -50,14 +57,8 @@ impl URLStateMachine {
             state: state_override.unwrap_or(State::SchemeStart),
             base,
             url: URL::new(),
-            input: input.to_string(),
+            input: trimmed_input.clone(),
         };
-
-        // If input contains any leading or trailing C0 control or space, validation error.
-        // If input contains any ASCII tab or newline, validation error.
-        let trimmed_input = input
-            .trim_matches(|c: char| c.is_ascii_control() && c.is_ascii_whitespace())
-            .replace(|c: char| c.is_ascii_whitespace(), "");
 
         let mut bytes: Vec<Option<u8>> = trimmed_input.bytes().map(|c| Some(c)).collect();
 
@@ -148,12 +149,7 @@ impl URLStateMachine {
 
     fn scheme_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is an ASCII alphanumeric, U+002B (+), U+002D (-), or U+002E (.), append c, lowercased, to buffer.
-        if code.is_some()
-            && (code.unwrap().is_ascii_alphanumeric()
-                || code == Some(43)
-                || code == Some(45)
-                || code == Some(46))
-        {
+        if is_ascii_alphanumeric(code) || code == Some(43) || code == Some(45) || code == Some(46) {
             self.buffer += (code.unwrap() as char).to_lowercase().to_string().as_str();
         }
         // Otherwise, if c is U+003A (:), then:
@@ -192,6 +188,7 @@ impl URLStateMachine {
                     .as_ref();
 
                 // If url’s port is url’s scheme’s default port, then set url’s port to null.
+                // TODO: Fix this
                 if let Some(port) = port {
                     if self.url.port == Some(port.to_string()) {
                         self.url.port = None;
@@ -255,7 +252,7 @@ impl URLStateMachine {
         // Otherwise, if c is U+003A (:) and insideBrackets is false, then:
         else if code == Some(58) && !self.inside_brackets {
             // If buffer is the empty string, validation error, return failure.
-            if self.buffer.len() == 0 {
+            if self.buffer.is_empty() {
                 return Some(Code::Failure);
             }
 
@@ -288,12 +285,12 @@ impl URLStateMachine {
             self.pointer -= 1;
 
             // If url is special and buffer is the empty string, validation error, return failure.
-            if self.is_special_url && self.buffer.len() == 0 {
+            if self.is_special_url && self.buffer.is_empty() {
                 return Some(Code::Failure);
             }
             // Otherwise, if state override is given, buffer is the empty string, and either url includes credentials or url’s port is non-null, return.
             else if self.state_override
-                && self.buffer.len() == 0
+                && self.buffer.is_empty()
                 && (self.url.port.is_some()
                     || !self.url.username.is_empty()
                     || !self.url.password.is_empty())
@@ -431,7 +428,7 @@ impl URLStateMachine {
     fn fragment_state(&mut self, code: Option<u8>) -> Option<Code> {
         // If c is not the EOF code point, then:
         if let Some(_code) = code {
-            let fragment = &self.input[self.pointer as usize..self.input.len()];
+            let fragment = &self.input[self.pointer as usize..];
             self.url.fragment =
                 Some(utf8_percent_encode(fragment, FRAGMENT_PERCENT_ENCODE_SET).to_string());
         }
@@ -652,17 +649,23 @@ impl URLStateMachine {
                     return Some(Code::Failure);
                 }
 
-                let port = port_value.unwrap();
+                let port = port_value.unwrap().to_string();
 
                 // Set url’s port to null, if port is url’s scheme’s default port; otherwise to port.
-                if let Some(default_port) = SPECIAL_SCHEMES.get(self.url.scheme.as_str()) {
-                    self.url.port = if default_port.as_ref() == Some(&port.to_string()) {
-                        None
+                if let Some(default_port_unwrapped) = SPECIAL_SCHEMES.get(self.url.scheme.as_str())
+                {
+                    if default_port_unwrapped.is_some() {
+                        let default_port = default_port_unwrapped.as_ref().unwrap().to_string();
+                        self.url.port = if port == default_port {
+                            None
+                        } else {
+                            Some(port)
+                        };
                     } else {
-                        Some(port.to_string())
+                        self.url.port = Some(port);
                     }
                 } else {
-                    self.url.port = Some(port.to_string());
+                    self.url.port = Some(port);
                 }
 
                 // Set buffer to the empty string.

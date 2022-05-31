@@ -18,8 +18,8 @@ pub fn serialize_ipv4(address: u64) -> String {
 }
 
 pub fn serialize_ipv6(address: Vec<u32>) -> String {
-    let mut output = "".to_string();
     let compress = find_longest_zero_sequence(&address);
+    let mut output = "".to_string();
     let mut ignore_0 = false;
 
     for piece_index in 0..8 {

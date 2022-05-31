@@ -32,7 +32,7 @@ fn parse_ipv4_number(buffer: String) -> Option<u32> {
     }
 
     // If input is the empty string, then return (0, true).
-    if buffer.len() == 0 {
+    if buffer.is_empty() {
         return Some(0);
     }
 
@@ -74,7 +74,7 @@ pub fn parse_ipv4(buffer: String) -> Option<u64> {
 
         if let Some(number) = result {
             // If any item in numbers is greater than 255, validation error.
-            if number > 255 && parts.last() != Some(&part) {
+            if number > 255 {
                 return None;
             }
 
@@ -111,8 +111,8 @@ pub fn parse_ipv6(buffer: String) -> Option<String> {
     // Let pieceIndex be 0.
     let mut piece_index: usize = 0;
 
-    // Let compress be null/0.
-    let mut compress: Option<usize> = Some(0);
+    // Let compress be null.
+    let mut compress: Option<usize> = None;
 
     // Let pointer be a pointer for input.
     let mut pointer = 0;
@@ -363,7 +363,7 @@ pub fn ends_with_a_number(domain: &str) -> bool {
 
     // If last is non-empty and contains only ASCII digits, then return true.
     if let Some(last_item) = last {
-        if last_item.bytes().all(|c| c.is_ascii_digit()) {
+        if !last_item.is_empty() && last_item.bytes().all(|c| c.is_ascii_digit()) {
             return true;
         }
     }
